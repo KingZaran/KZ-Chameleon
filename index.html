@@ -304,17 +304,6 @@
   </div>
 </div>
 
-<!-- GAMEOVER OVERLAY -->
-<div id="gameover-overlay">
-  <div class="gameover-box">
-    <div class="trophy">&#x1F98E;</div>
-    <h2>GAME OVER</h2>
-    <div class="final-scores" id="go-scores"></div>
-    <button class="btn green" id="go-play-again" style="display:none">Play Again</button>
-    <p class="loading" id="go-wait-msg"></p>
-  </div>
-</div>
-
 <!-- LOBBY -->
 <div class="screen active" id="lobby">
   <div class="logo">
@@ -673,14 +662,12 @@ function routeToScreen() {
     return;
   }
   // Always close overlays when routing unless specifically these phases
-  if (ph !== 'results')  document.getElementById('results-overlay').classList.remove('active');
-  if (ph !== 'gameover') document.getElementById('gameover-overlay').classList.remove('active');
+  if (ph !== 'results') document.getElementById('results-overlay').classList.remove('active');
 
-  if (ph === 'reveal')   { showRevealScreen(); return; }
-  if (ph === 'playing')  { showScreen('game'); renderGame(); return; }
-  if (ph === 'voting')   { showScreen('voting'); renderVoting(); return; }
-  if (ph === 'results')  { showScreen('game'); renderGame(); showRoundResult(); return; }
-  if (ph === 'gameover') { showScreen('game'); renderGame(); showGameOverOverlay(); return; }
+  if (ph === 'reveal')  { showRevealScreen(); return; }
+  if (ph === 'playing') { showScreen('game'); renderGame(); return; }
+  if (ph === 'voting')  { showScreen('voting'); renderVoting(); return; }
+  if (ph === 'results') { showScreen('game'); renderGame(); showRoundResult(); return; }
 }
 
 // ── HOST GAME ──
@@ -937,8 +924,6 @@ function renderGame() {
   document.getElementById('g-round').textContent = gameState.currentRoundInSet || 1;
   document.getElementById('g-total-rounds').textContent = gameState.roundsPerVote || 2;
   document.getElementById('g-topic').textContent = gameState.topic || '';
-  document.getElementById('g-scores').innerHTML = gameState.players
-    .map(p => `<span class="score-item">${p.name}: <span>${p.score}pts</span></span>`).join('');
 
   const isCham = gameState.chameleonId === myPlayerId;
   const hintEl = document.getElementById('g-role-hint');
@@ -958,16 +943,21 @@ function renderGamePlayerStatus() {
   const el = document.getElementById('g-player-status');
   if (!el || !gameState) return;
   const clues = gameState.clues || [];
-  el.innerHTML = gameState.players.map(p => {
+  const order = gameState.playerOrder || gameState.players.map(p => p.id);
+  const turnId = order[gameState.currentTurnIndex ?? 0];
+  el.innerHTML = order.map(pid => {
+    const p = gameState.players.find(pl => pl.id === pid);
+    if (!p) return '';
     const hasClued = clues.some(c => c.playerId === p.id);
     const isMe = p.id === myPlayerId;
-    const badge = gameState.phase === 'playing'
-      ? (hasClued ? '<span class="ps-badge ps-done">✓ Clued</span>' : '<span class="ps-badge ps-waiting">Thinking...</span>')
-      : '';
+    const isTurn = p.id === turnId && gameState.phase === 'playing';
+    let badge = '';
+    if (hasClued)       badge = '<span class="ps-badge ps-done">✓ Clued</span>';
+    else if (isTurn)    badge = '<span class="ps-badge" style="background:var(--gold);color:var(--black);">▶ THEIR TURN</span>';
+    else if (gameState.phase === 'playing') badge = '<span class="ps-badge ps-waiting">Waiting...</span>';
     const youBadge = isMe ? '<span class="ps-badge ps-you">You</span>' : '';
-    return `<div class="ps-row">
+    return `<div class="ps-row" style="${isTurn ? 'background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);border-radius:6px;' : ''}">
       <span class="ps-name">${p.name}</span>
-      <span class="ps-score">${p.score}<span class="ps-pts">pts</span></span>
       ${youBadge}${badge}
     </div>`;
   }).join('');
@@ -979,8 +969,10 @@ function renderClues() {
   const statusBox = document.getElementById('g-status-box');
   if (!el) return;
   const clues = gameState.clues || [];
-  const myClue = clues.find(c => c.playerId === myPlayerId);
-  const allClued = gameState.players.every(p => clues.some(c => c.playerId === p.id));
+  const order = gameState.playerOrder || gameState.players.map(p => p.id);
+  const turnId = order[gameState.currentTurnIndex ?? 0];
+  const isMyTurn = turnId === myPlayerId;
+  const myAlreadyClued = clues.some(c => c.playerId === myPlayerId);
 
   el.innerHTML = clues.map(c => {
     const player = gameState.players.find(p => p.id === c.playerId);
@@ -990,17 +982,19 @@ function renderClues() {
     </div>`;
   }).join('');
 
-  if (gameState.phase === 'playing' && !myClue) {
+  if (gameState.phase === 'playing' && isMyTurn && !myAlreadyClued) {
     inputArea.style.display = 'block';
     statusBox.style.display = 'none';
   } else {
     inputArea.style.display = 'none';
     statusBox.style.display = 'block';
     if (gameState.phase === 'playing') {
-      const waiting = gameState.players.filter(p => !clues.some(c => c.playerId === p.id));
-      statusBox.innerHTML = allClued
-        ? 'All clues are in! Moving to next phase...'
-        : 'Waiting for: <strong>' + waiting.map(p => p.name).join(', ') + '</strong>';
+      const currentPlayer = gameState.players.find(p => p.id === turnId);
+      if (myAlreadyClued) {
+        statusBox.innerHTML = `Your clue is in. Waiting for others...`;
+      } else {
+        statusBox.innerHTML = `Waiting for <strong>${currentPlayer?.name || '?'}</strong> to give their clue.`;
+      }
     } else {
       statusBox.innerHTML = '';
     }
@@ -1011,20 +1005,35 @@ async function submitClue() {
   const input = document.getElementById('g-clue-input');
   const text = input.value.trim();
   if (!text) return;
+  const order = gameState.playerOrder || gameState.players.map(p => p.id);
+  const turnId = order[gameState.currentTurnIndex ?? 0];
+  // Only the current turn player can submit
+  if (turnId !== myPlayerId) return;
   if (gameState.clues.some(c => c.playerId === myPlayerId)) return;
   input.value = '';
   if (!gameState.clues) gameState.clues = [];
   gameState.clues.push({ playerId: myPlayerId, text });
 
-  const allClued = gameState.players.every(p => gameState.clues.some(c => c.playerId === p.id));
-  if (allClued) {
+  const nextTurnIndex = (gameState.currentTurnIndex ?? 0) + 1;
+  const allHadTurn = nextTurnIndex >= order.length;
+
+  if (allHadTurn) {
+    // Everyone has given a clue this sub-round
     const inSet = gameState.currentRoundInSet || 1;
     if (inSet >= gameState.roundsPerVote) {
+      // All clue rounds done — move to voting
       gameState.phase = 'voting';
+      gameState.currentTurnIndex = 0;
     } else {
+      // Start the next clue sub-round
       gameState.currentRoundInSet = inSet + 1;
       gameState.round = (gameState.round || 1) + 1;
+      gameState.currentTurnIndex = 0;
+      // Keep clues visible — they accumulate across sub-rounds
     }
+  } else {
+    // Advance to next player
+    gameState.currentTurnIndex = nextTurnIndex;
   }
   await pushState();
 }
@@ -1089,88 +1098,44 @@ async function resolveVote() {
   const topIds = Object.keys(voteCounts).filter(id => voteCounts[id] === maxVotes);
   const accusedId = topIds[Math.floor(Math.random() * topIds.length)];
   const caught = accusedId === gameState.chameleonId;
+  const accusedName = gameState.players.find(p => p.id === accusedId)?.name || '?';
+  const chamName = gameState.players.find(p => p.id === gameState.chameleonId)?.name || '?';
 
-  // Award points
-  if (caught) {
-    gameState.players.forEach(p => { if (p.id !== gameState.chameleonId) p.score += 1; });
-  } else {
-    const cham = gameState.players.find(p => p.id === gameState.chameleonId);
-    if (cham) cham.score += 2;
-  }
-
-  gameState.lastResult = {
-    caught,
-    accusedId,
-    accusedName: gameState.players.find(p => p.id === accusedId)?.name
-  };
-
-  const winTarget = gameState.winTarget || 5;
-  const topScore = Math.max(...gameState.players.map(p => p.score));
-  gameState.phase = (winTarget < 999 && topScore >= winTarget) ? 'gameover' : 'results';
+  gameState.lastResult = { caught, accusedId, accusedName, chamName };
+  // Game always ends after the vote — it's a single-game elimination
+  gameState.phase = 'results';
   await pushState();
 }
-
 // ── ROUND RESULT ──
 function showRoundResult() {
   if (!gameState.lastResult) return;
-  const { caught } = gameState.lastResult;
-  const cham = gameState.players.find(p => p.id === gameState.chameleonId);
+  const { caught, accusedName, chamName } = gameState.lastResult;
   const overlay = document.getElementById('results-overlay');
 
   document.getElementById('ro-verdict').innerHTML =
-    `<span class="verdict-badge ${caught ? 'verdict-caught' : 'verdict-escaped'}">${caught ? 'Chameleon Caught!' : 'Chameleon Escaped!'}</span>`;
+    `<span class="verdict-badge ${caught ? 'verdict-caught' : 'verdict-escaped'}">${caught ? '🎉 Chameleon Caught!' : '🦎 Chameleon Escaped!'}</span>`;
   document.getElementById('ro-headline').textContent = caught
-    ? 'The players win!'
-    : (cham?.name || '?') + ' wins this round!';
-  document.getElementById('ro-cham-name').textContent = cham?.name || '?';
-  document.getElementById('ro-word').textContent = 'The word was: ' + gameState.word;
-  document.getElementById('ro-scores').innerHTML = gameState.players
-    .map(p => `<span class="score-chip">${p.name} <span>${p.score}pts</span></span>`).join('');
+    ? `${accusedName} was the Chameleon — players win!`
+    : `${accusedName} was voted out, but they weren't the Chameleon — ${chamName} wins!`;
+  document.getElementById('ro-cham-name').textContent = chamName;
+  document.getElementById('ro-word').textContent = 'The secret word was: ' + gameState.word;
+  document.getElementById('ro-scores').innerHTML = '';
 
   const nextBtn = document.getElementById('ro-next-btn');
   const waitMsg = document.getElementById('ro-wait-msg');
+  nextBtn.textContent = 'Play Again';
   nextBtn.style.display = isHost ? 'block' : 'none';
-  waitMsg.textContent = isHost ? '' : 'Waiting for host to start next round...';
-  nextBtn.onclick = nextRound;
+  waitMsg.textContent = isHost ? '' : 'Waiting for host to play again...';
+  nextBtn.onclick = playAgain;
   overlay.classList.add('active');
 }
-
-// ── GAME OVER ──
-function showGameOverOverlay() {
-  document.getElementById('results-overlay').classList.remove('active');
-  const overlay = document.getElementById('gameover-overlay');
-  const sorted = [...gameState.players].sort((a, b) => b.score - a.score);
-  const medals = ['&#x1F947;', '&#x1F948;', '&#x1F949;'];
-  document.getElementById('go-scores').innerHTML = sorted.map((p, i) => `
-    <div class="fs-row">
-      <span class="fs-rank">${medals[i] || ''}</span>
-      <span class="fs-name">${p.name}</span>
-      <span class="fs-score">${p.score}<span style="font-size:0.7rem;color:var(--light);">pts</span></span>
-    </div>`).join('');
-  const btn = document.getElementById('go-play-again');
-  const msg = document.getElementById('go-wait-msg');
-  btn.style.display = isHost ? 'block' : 'none';
-  msg.textContent = isHost ? '' : 'Waiting for host to start a new game...';
-  btn.onclick = playAgain;
-  overlay.classList.add('active');
-}
-
-async function nextRound() {
-  if (!isHost) return;
-  document.getElementById('results-overlay').classList.remove('active');
-  gameState.round = (gameState.round || 1) + 1;
-  await startRound();
-}
-
 async function playAgain() {
   if (!isHost) return;
-  document.getElementById('gameover-overlay').classList.remove('active');
+  document.getElementById('results-overlay').classList.remove('active');
   gameState.round = 1;
-  gameState.players.forEach(p => p.score = 0);
   gameState.usedWords = [];
   await startRound();
 }
-
 // ── LEAVE GAME ──
 async function leaveGame() {
   clearSession();
