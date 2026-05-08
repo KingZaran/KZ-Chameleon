@@ -365,16 +365,6 @@
           <option value="4">4 rounds of clues</option>
         </select>
       </div>
-      <div class="input-group">
-        <label>Win condition</label>
-        <select id="cfg-wintarget">
-          <option value="3">First to 3 points</option>
-          <option value="5" selected>First to 5 points</option>
-          <option value="7">First to 7 points</option>
-          <option value="10">First to 10 points</option>
-          <option value="999">Endless (no limit)</option>
-        </select>
-      </div>
     </div>
 
     <div class="player-list">
@@ -404,7 +394,6 @@
     <div class="top-bar">
       <span class="room-pill">ROOM: <span id="g-room-code"></span></span>
       <span class="round-info">Clue Round <span id="g-round">1</span> of <span id="g-total-rounds">2</span></span>
-      <div class="score-list" id="g-scores"></div>
       <button class="btn secondary" onclick="leaveGame()" style="width:auto;font-size:0.85rem;padding:0.4rem 0.9rem;">Leave</button>
     </div>
 
@@ -842,9 +831,7 @@ function renderWaiting() {
   const startBtn = document.getElementById('start-btn');
   const status = document.getElementById('waiting-status');
   const count = gameState.players.length;
-  const wt = gameState.winTarget || 5;
   const rr = gameState.roundsPerVote || 2;
-  const wtLabel = wt >= 999 ? 'Endless' : `First to ${wt} pts`;
 
   if (isHost) {
     hostCfg.style.display = 'flex';
@@ -852,7 +839,7 @@ function renderWaiting() {
     startBtn.disabled = count < 3;
     status.textContent = count < 3
       ? `Need at least 3 players (${count}/3 joined)`
-      : `${count} players ready · ${rr} clue round(s) · ${wtLabel}`;
+      : `${count} players ready · ${rr} clue round(s) per game`;
   } else {
     hostCfg.style.display = 'none';
     status.textContent = `${count} player(s) · Waiting for host to start...`;
@@ -863,7 +850,6 @@ function renderWaiting() {
 async function startGame() {
   if (!isHost || gameState.players.length < 3) return;
   gameState.roundsPerVote = parseInt(document.getElementById('cfg-rounds').value || '2');
-  gameState.winTarget = parseInt(document.getElementById('cfg-wintarget').value || '5');
   gameState.round = 1;
   await startRound();
 }
@@ -884,6 +870,9 @@ async function startRound() {
   gameState.readyPlayers = [];
   gameState.currentRoundInSet = 1;
   gameState.lastResult = null;
+  // Randomise the speaking order for this game
+  gameState.playerOrder = shuffle(gameState.players.map(p => p.id));
+  gameState.currentTurnIndex = 0;
   gameState.phase = 'reveal';
   await pushState();
 }
