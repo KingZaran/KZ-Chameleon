@@ -402,7 +402,9 @@
         <div id="g-clues-list"></div>
         <div id="g-input-area" style="display:none;">
           <div class="clue-input-area">
-            <textarea id="g-clue-input" placeholder="Give a clue that fits the topic..." maxlength="80" rows="2"></textarea>
+            <input type="text" id="g-clue-input" placeholder="One word only..." maxlength="30"
+            oninput="this.value=this.value.replace(/\s.*/,'')"
+            style="background:var(--grey);border:1px solid var(--mid);border-radius:6px;color:var(--white);font-family:'DM Mono',monospace;font-size:1rem;padding:0.75rem 1rem;outline:none;width:100%;transition:border-color 0.2s;">
             <button class="btn" onclick="submitClue()">Submit Clue</button>
           </div>
         </div>
@@ -450,99 +452,149 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 //  hint  = shown to the chameleon (related but not the word)
 // ═══════════════════════════════════════
 const WORD_BANK = [
-  {topic:"Famous Landmarks",     word:"Eiffel Tower",      hint:"Tall Paris iron structure"},
-  {topic:"Famous Landmarks",     word:"Big Ben",           hint:"London clock tower"},
-  {topic:"Famous Landmarks",     word:"Colosseum",         hint:"Ancient Roman arena"},
-  {topic:"Famous Landmarks",     word:"Stonehenge",        hint:"Mysterious British stone circle"},
-  {topic:"Famous Landmarks",     word:"Niagara Falls",     hint:"Large North American waterfall"},
-  {topic:"Famous Landmarks",     word:"Machu Picchu",      hint:"Inca mountain ruins in Peru"},
-  {topic:"Animals",              word:"Elephant",          hint:"Large grey mammal with a trunk"},
-  {topic:"Animals",              word:"Penguin",           hint:"Black-and-white Antarctic bird"},
-  {topic:"Animals",              word:"Cheetah",           hint:"Fastest spotted big cat"},
-  {topic:"Animals",              word:"Octopus",           hint:"Eight-limbed sea creature"},
-  {topic:"Animals",              word:"Platypus",          hint:"Odd egg-laying Australian mammal"},
-  {topic:"Animals",              word:"Mantis Shrimp",     hint:"Colourful punching crustacean"},
-  {topic:"Sports",               word:"Curling",           hint:"Ice sport with brooms and stones"},
-  {topic:"Sports",               word:"Fencing",           hint:"Sword-based Olympic duel sport"},
-  {topic:"Sports",               word:"Polo",              hint:"Horse-riding ball sport"},
-  {topic:"Sports",               word:"Surfing",           hint:"Riding ocean waves on a board"},
-  {topic:"Sports",               word:"Bobsled",           hint:"Ice track racing in a sled"},
-  {topic:"Sports",               word:"Dressage",          hint:"Competitive horse movement sport"},
-  {topic:"Foods",                word:"Croissant",         hint:"French flaky buttery pastry"},
-  {topic:"Foods",                word:"Paella",            hint:"Spanish saffron rice dish"},
-  {topic:"Foods",                word:"Tiramisu",          hint:"Italian coffee layered dessert"},
-  {topic:"Foods",                word:"Hummus",            hint:"Middle Eastern chickpea dip"},
-  {topic:"Foods",                word:"Kimchi",            hint:"Korean fermented spicy cabbage"},
-  {topic:"Foods",                word:"Poutine",           hint:"Canadian chips with gravy and cheese"},
-  {topic:"Movies",               word:"Inception",         hint:"Dream-within-a-dream heist film"},
-  {topic:"Movies",               word:"Titanic",           hint:"Famous sinking ship romance"},
-  {topic:"Movies",               word:"Parasite",          hint:"Korean Oscar-winning class thriller"},
-  {topic:"Movies",               word:"Gladiator",         hint:"Roman arena revenge epic"},
-  {topic:"Movies",               word:"Jaws",              hint:"Famous summer shark horror"},
-  {topic:"Movies",               word:"The Matrix",        hint:"Red pill blue pill sci-fi film"},
-  {topic:"Music Genres",         word:"Jazz",              hint:"Improvisational American swing music"},
-  {topic:"Music Genres",         word:"Reggae",            hint:"Jamaican rhythmic bass music"},
-  {topic:"Music Genres",         word:"Flamenco",          hint:"Passionate Spanish guitar dance music"},
-  {topic:"Music Genres",         word:"Grime",             hint:"British MC urban rap genre"},
-  {topic:"Music Genres",         word:"Bluegrass",         hint:"American folk banjo string music"},
-  {topic:"Music Genres",         word:"Bossa Nova",        hint:"Brazilian gentle jazz-samba fusion"},
-  {topic:"Jobs",                 word:"Surgeon",           hint:"Doctor who performs operations"},
-  {topic:"Jobs",                 word:"Sommelier",         hint:"Professional restaurant wine expert"},
-  {topic:"Jobs",                 word:"Cartographer",      hint:"Person who makes maps"},
-  {topic:"Jobs",                 word:"Taxidermist",       hint:"Person who preserves dead animals"},
-  {topic:"Jobs",                 word:"Actuary",           hint:"Person who calculates insurance risk"},
-  {topic:"Jobs",                 word:"Luthier",           hint:"Person who builds stringed instruments"},
-  {topic:"Countries",            word:"Bhutan",            hint:"Himalayan Buddhist mountain kingdom"},
-  {topic:"Countries",            word:"Iceland",           hint:"Nordic volcanic island nation"},
-  {topic:"Countries",            word:"Laos",              hint:"Landlocked Southeast Asian country"},
-  {topic:"Countries",            word:"Uruguay",           hint:"Small progressive South American nation"},
-  {topic:"Countries",            word:"Oman",              hint:"Arabian Gulf sultanate"},
-  {topic:"Countries",            word:"Moldova",           hint:"Small Eastern European wine country"},
-  {topic:"Things in a Kitchen",  word:"Colander",          hint:"Bowl full of holes for draining"},
-  {topic:"Things in a Kitchen",  word:"Mandoline",         hint:"Dangerous sharp vegetable slicer"},
-  {topic:"Things in a Kitchen",  word:"Ramekin",           hint:"Small ceramic individual baking dish"},
-  {topic:"Things in a Kitchen",  word:"Whisk",             hint:"Wire loops tool for beating eggs"},
-  {topic:"Things in a Kitchen",  word:"Spatula",           hint:"Flat flexible flipping utensil"},
-  {topic:"Superheroes",          word:"Wolverine",         hint:"Metal-clawed X-Man mutant"},
-  {topic:"Superheroes",          word:"Black Widow",       hint:"Spy assassin female Avenger"},
-  {topic:"Superheroes",          word:"Green Lantern",     hint:"DC hero powered by a magic ring"},
-  {topic:"Superheroes",          word:"Hawkeye",           hint:"Avenger who uses a bow and arrow"},
-  {topic:"Superheroes",          word:"Mystique",          hint:"Blue shape-shifting X-Men villain"},
-  {topic:"Inventions",           word:"Gunpowder",         hint:"Ancient Chinese explosive mixture"},
-  {topic:"Inventions",           word:"Printing Press",    hint:"Gutenberg's mass text machine"},
-  {topic:"Inventions",           word:"Compass",           hint:"Magnetic navigation direction tool"},
-  {topic:"Inventions",           word:"Penicillin",        hint:"Fleming's accidental antibiotic mould"},
-  {topic:"Inventions",           word:"Steam Engine",      hint:"Watt's industrial revolution machine"},
-  {topic:"Dances",               word:"Tango",             hint:"Dramatic Argentine couple dance"},
-  {topic:"Dances",               word:"Breakdancing",      hint:"Acrobatic spinning street dance"},
-  {topic:"Dances",               word:"Waltz",             hint:"Elegant spinning ballroom dance"},
-  {topic:"Dances",               word:"Bhangra",           hint:"Energetic Punjabi harvest dance"},
-  {topic:"Dances",               word:"Moonwalk",          hint:"Michael Jackson backwards glide move"},
-  {topic:"Things in Space",      word:"Nebula",            hint:"Colourful gas cloud where stars form"},
-  {topic:"Things in Space",      word:"Pulsar",            hint:"Rapidly spinning neutron star"},
-  {topic:"Things in Space",      word:"Asteroid Belt",     hint:"Rocky debris ring between planets"},
-  {topic:"Things in Space",      word:"Solar Wind",        hint:"Charged particle stream from the sun"},
-  {topic:"Things in Space",      word:"Event Horizon",     hint:"Point of no return near a black hole"},
-  {topic:"Phobias",              word:"Claustrophobia",    hint:"Fear of enclosed spaces"},
-  {topic:"Phobias",              word:"Arachnophobia",     hint:"Fear of spiders"},
-  {topic:"Phobias",              word:"Acrophobia",        hint:"Fear of heights"},
-  {topic:"Phobias",              word:"Trypophobia",       hint:"Fear of clusters of irregular holes"},
-  {topic:"Phobias",              word:"Thalassophobia",    hint:"Fear of deep open ocean water"},
-  {topic:"Board Games",          word:"Cluedo",            hint:"Murder mystery deduction game"},
-  {topic:"Board Games",          word:"Scrabble",          hint:"Letter tile word-building game"},
-  {topic:"Board Games",          word:"Risk",              hint:"World domination strategy game"},
-  {topic:"Board Games",          word:"Battleship",        hint:"Grid-based naval guessing game"},
-  {topic:"Board Games",          word:"Settlers of Catan", hint:"Resource trading island building game"},
-  {topic:"Things at a Carnival", word:"Ferris Wheel",      hint:"Large rotating observation wheel"},
-  {topic:"Things at a Carnival", word:"Candyfloss",        hint:"Spun pink sugar on a stick"},
-  {topic:"Things at a Carnival", word:"Helter Skelter",    hint:"Spiral sliding tower ride"},
-  {topic:"Things at a Carnival", word:"Hook-a-Duck",       hint:"Water game with rubber ducks"},
-  {topic:"Things at a Carnival", word:"Ghost Train",       hint:"Dark spooky tunnel ride"},
-  {topic:"Cocktails",            word:"Mojito",            hint:"Cuban rum lime and mint drink"},
-  {topic:"Cocktails",            word:"Negroni",           hint:"Bitter Italian gin orange drink"},
-  {topic:"Cocktails",            word:"Margarita",         hint:"Mexican tequila lime salt drink"},
-  {topic:"Cocktails",            word:"Espresso Martini",  hint:"Coffee vodka shaken cocktail"},
-  {topic:"Cocktails",            word:"Aperol Spritz",     hint:"Italian orange prosecco fizz"},
+  // Animals
+  {topic:"Animals", word:"Shark",      hint:"Dolphin"},
+  {topic:"Animals", word:"Elephant",   hint:"Rhino"},
+  {topic:"Animals", word:"Penguin",    hint:"Puffin"},
+  {topic:"Animals", word:"Tiger",      hint:"Cheetah"},
+  {topic:"Animals", word:"Crocodile",  hint:"Lizard"},
+  {topic:"Animals", word:"Gorilla",    hint:"Chimp"},
+  {topic:"Animals", word:"Jellyfish",  hint:"Octopus"},
+  {topic:"Animals", word:"Eagle",      hint:"Hawk"},
+  {topic:"Animals", word:"Flamingo",   hint:"Swan"},
+  {topic:"Animals", word:"Kangaroo",   hint:"Wallaby"},
+
+  // Food
+  {topic:"Food", word:"Pizza",      hint:"Pasta"},
+  {topic:"Food", word:"Burger",     hint:"Hotdog"},
+  {topic:"Food", word:"Sushi",      hint:"Noodles"},
+  {topic:"Food", word:"Chocolate",  hint:"Caramel"},
+  {topic:"Food", word:"Chips",      hint:"Crisps"},
+  {topic:"Food", word:"Taco",       hint:"Wrap"},
+  {topic:"Food", word:"Waffle",     hint:"Pancake"},
+  {topic:"Food", word:"Popcorn",    hint:"Nachos"},
+  {topic:"Food", word:"Curry",      hint:"Stew"},
+  {topic:"Food", word:"Spaghetti",  hint:"Noodles"},
+
+  // Sports
+  {topic:"Sports", word:"Football",   hint:"Rugby"},
+  {topic:"Sports", word:"Swimming",   hint:"Diving"},
+  {topic:"Sports", word:"Tennis",     hint:"Badminton"},
+  {topic:"Sports", word:"Basketball", hint:"Netball"},
+  {topic:"Sports", word:"Cycling",    hint:"Skating"},
+  {topic:"Sports", word:"Boxing",     hint:"Wrestling"},
+  {topic:"Sports", word:"Gymnastics", hint:"Acrobatics"},
+  {topic:"Sports", word:"Archery",    hint:"Darts"},
+  {topic:"Sports", word:"Skiing",     hint:"Snowboarding"},
+  {topic:"Sports", word:"Volleyball", hint:"Basketball"},
+
+  // Countries
+  {topic:"Countries", word:"France",    hint:"Belgium"},
+  {topic:"Countries", word:"Japan",     hint:"China"},
+  {topic:"Countries", word:"Brazil",    hint:"Argentina"},
+  {topic:"Countries", word:"Egypt",     hint:"Morocco"},
+  {topic:"Countries", word:"Australia", hint:"NewZealand"},
+  {topic:"Countries", word:"Canada",    hint:"America"},
+  {topic:"Countries", word:"India",     hint:"Pakistan"},
+  {topic:"Countries", word:"Germany",   hint:"Austria"},
+  {topic:"Countries", word:"Mexico",    hint:"Colombia"},
+  {topic:"Countries", word:"Russia",    hint:"Ukraine"},
+
+  // Jobs
+  {topic:"Jobs", word:"Doctor",     hint:"Nurse"},
+  {topic:"Jobs", word:"Teacher",    hint:"Lecturer"},
+  {topic:"Jobs", word:"Pilot",      hint:"Captain"},
+  {topic:"Jobs", word:"Chef",       hint:"Baker"},
+  {topic:"Jobs", word:"Footballer", hint:"Athlete"},
+  {topic:"Jobs", word:"Firefighter",hint:"Paramedic"},
+  {topic:"Jobs", word:"Police",     hint:"Guard"},
+  {topic:"Jobs", word:"Astronaut",  hint:"Cosmonaut"},
+  {topic:"Jobs", word:"Scientist",  hint:"Engineer"},
+  {topic:"Jobs", word:"Actor",      hint:"Comedian"},
+
+  // Movies
+  {topic:"Movies", word:"Titanic",    hint:"Avatar"},
+  {topic:"Movies", word:"Frozen",     hint:"Moana"},
+  {topic:"Movies", word:"Jaws",       hint:"Shark"},
+  {topic:"Movies", word:"Matilda",    hint:"Charlie"},
+  {topic:"Movies", word:"Grease",     hint:"Hairspray"},
+  {topic:"Movies", word:"Shrek",      hint:"Donkey"},
+  {topic:"Movies", word:"Toy Story",  hint:"Robots"},
+  {topic:"Movies", word:"Jumanji",    hint:"Jungle"},
+  {topic:"Movies", word:"Moana",      hint:"Frozen"},
+  {topic:"Movies", word:"Minions",    hint:"Despicable"},
+
+  // Things in Space
+  {topic:"Space", word:"Moon",       hint:"Sun"},
+  {topic:"Space", word:"Mars",       hint:"Venus"},
+  {topic:"Space", word:"Asteroid",   hint:"Meteor"},
+  {topic:"Space", word:"Rocket",     hint:"Shuttle"},
+  {topic:"Space", word:"Satellite",  hint:"Station"},
+  {topic:"Space", word:"Galaxy",     hint:"Universe"},
+  {topic:"Space", word:"Comet",      hint:"Asteroid"},
+  {topic:"Space", word:"Telescope",  hint:"Binoculars"},
+  {topic:"Space", word:"Gravity",    hint:"Orbit"},
+  {topic:"Space", word:"Alien",      hint:"Robot"},
+
+  // Nature
+  {topic:"Nature", word:"Volcano",    hint:"Mountain"},
+  {topic:"Nature", word:"Rainbow",    hint:"Sunset"},
+  {topic:"Nature", word:"Thunder",    hint:"Lightning"},
+  {topic:"Nature", word:"Desert",     hint:"Sahara"},
+  {topic:"Nature", word:"Ocean",      hint:"Sea"},
+  {topic:"Nature", word:"Forest",     hint:"Jungle"},
+  {topic:"Nature", word:"River",      hint:"Stream"},
+  {topic:"Nature", word:"Earthquake", hint:"Tsunami"},
+  {topic:"Nature", word:"Snowflake",  hint:"Raindrop"},
+  {topic:"Nature", word:"Tornado",    hint:"Hurricane"},
+
+  // School
+  {topic:"School", word:"Homework",   hint:"Revision"},
+  {topic:"School", word:"Library",    hint:"Classroom"},
+  {topic:"School", word:"Maths",      hint:"Science"},
+  {topic:"School", word:"Pencil",     hint:"Pen"},
+  {topic:"School", word:"Ruler",      hint:"Protractor"},
+  {topic:"School", word:"Assembly",   hint:"Registration"},
+  {topic:"School", word:"Detention",  hint:"Exclusion"},
+  {topic:"School", word:"Lunch",      hint:"Breakfast"},
+  {topic:"School", word:"PE",         hint:"Drama"},
+  {topic:"School", word:"Exam",       hint:"Test"},
+
+  // Things at Home
+  {topic:"At Home", word:"Microwave",  hint:"Oven"},
+  {topic:"At Home", word:"Sofa",       hint:"Armchair"},
+  {topic:"At Home", word:"Remote",     hint:"Controller"},
+  {topic:"At Home", word:"Fridge",     hint:"Freezer"},
+  {topic:"At Home", word:"Shower",     hint:"Bath"},
+  {topic:"At Home", word:"Lamp",       hint:"Torch"},
+  {topic:"At Home", word:"Curtains",   hint:"Blinds"},
+  {topic:"At Home", word:"Doorbell",   hint:"Knocker"},
+  {topic:"At Home", word:"Kettle",     hint:"Toaster"},
+  {topic:"At Home", word:"Pillow",     hint:"Blanket"},
+
+  // Superheroes
+  {topic:"Superheroes", word:"Superman",   hint:"Batman"},
+  {topic:"Superheroes", word:"Spiderman",  hint:"Batman"},
+  {topic:"Superheroes", word:"Hulk",       hint:"Thor"},
+  {topic:"Superheroes", word:"Ironman",    hint:"Antman"},
+  {topic:"Superheroes", word:"Wolverine",  hint:"Cyclops"},
+  {topic:"Superheroes", word:"Flash",      hint:"Superman"},
+  {topic:"Superheroes", word:"Aquaman",    hint:"Namor"},
+  {topic:"Superheroes", word:"BlackPanther",hint:"Ironman"},
+  {topic:"Superheroes", word:"Deadpool",   hint:"Wolverine"},
+  {topic:"Superheroes", word:"Thor",       hint:"Loki"},
+
+  // Music
+  {topic:"Music", word:"Guitar",    hint:"Bass"},
+  {topic:"Music", word:"Drums",     hint:"Bongos"},
+  {topic:"Music", word:"Pop",       hint:"RnB"},
+  {topic:"Music", word:"Rap",       hint:"Grime"},
+  {topic:"Music", word:"Concert",   hint:"Festival"},
+  {topic:"Music", word:"Spotify",   hint:"Apple"},
+  {topic:"Music", word:"Violin",    hint:"Cello"},
+  {topic:"Music", word:"Choir",     hint:"Band"},
+  {topic:"Music", word:"Lyrics",    hint:"Chorus"},
+  {topic:"Music", word:"Headphones",hint:"Earphones"},
 ];
 
 // ═══════════════════════════════════════
@@ -972,7 +1024,8 @@ function renderClues() {
   const order = gameState.playerOrder || gameState.players.map(p => p.id);
   const turnId = order[gameState.currentTurnIndex ?? 0];
   const isMyTurn = turnId === myPlayerId;
-  const myAlreadyClued = clues.some(c => c.playerId === myPlayerId);
+  const currentSet = gameState.currentRoundInSet || 1;
+  const myAlreadyClued = clues.some(c => c.playerId === myPlayerId && c.roundInSet === currentSet);
 
   el.innerHTML = clues.map(c => {
     const player = gameState.players.find(p => p.id === c.playerId);
@@ -1003,16 +1056,17 @@ function renderClues() {
 
 async function submitClue() {
   const input = document.getElementById('g-clue-input');
-  const text = input.value.trim();
+  const text = input.value.trim().split(/\s+/)[0]; // enforce single word
   if (!text) return;
   const order = gameState.playerOrder || gameState.players.map(p => p.id);
   const turnId = order[gameState.currentTurnIndex ?? 0];
   // Only the current turn player can submit
   if (turnId !== myPlayerId) return;
-  if (gameState.clues.some(c => c.playerId === myPlayerId)) return;
+  const currentSet = gameState.currentRoundInSet || 1;
+  if (gameState.clues.some(c => c.playerId === myPlayerId && c.roundInSet === currentSet)) return;
   input.value = '';
   if (!gameState.clues) gameState.clues = [];
-  gameState.clues.push({ playerId: myPlayerId, text });
+  gameState.clues.push({ playerId: myPlayerId, text, roundInSet: currentSet });
 
   const nextTurnIndex = (gameState.currentTurnIndex ?? 0) + 1;
   const allHadTurn = nextTurnIndex >= order.length;
