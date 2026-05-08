@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>The Chameleon</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+  :root {
+    --black: #0a0a0a;
+    --white: #f5f0e8;
+    --cream: #ede8dc;
+    --accent: #e63946;
+    --green: #2d6a4f;
+    --green-light: #3d8a64;
+    --grey: #1e1e22;
+    --mid: #3d3d42;
+    --light: #888;
+    --gold: #c9a84c;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { overflow-x: hidden; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 9999; opacity: 0.3;
+  }
+
+  h1, h2, h3 { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.05em; }
+
+  .screen { display: none; min-height: 100vh; padding: 2rem; animation: fadeIn 0.3s ease; }
+  .screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* LOBBY */
+  #lobby { gap: 2.5rem; }
+  .logo { text-align: center; }
+  .logo h1 { font-size: clamp(3rem, 10vw, 6rem); line-height: 1; color: var(--white); }
+  .logo h1 span { color: var(--gold); }
+  .logo p { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--light); letter-spacing: 0.2em; text-transform: uppercase; margin-top: 0.5rem; }
+  .logo .eye { font-size: 1.5rem; opacity: 0.2; letter-spacing: 0.5em; margin-top: 0.5rem; }
+
+  .lobby-form { display: flex; flex-direction: column; gap: 1rem; width: 100%; max-width: 360px; }
+  .input-group { display: flex; flex-direction: column; gap: 0.4rem; }
+  .input-group label { font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.15em; color: var(--light); text-transform: uppercase; }
+
+  input[type="text"], select, textarea {
+    background: var(--grey);
+    border: 1px solid var(--mid);
+    border-radius: 6px;
+    color: var(--white);
+    font-family: 'DM Mono', monospace;
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  input[type="text"]:focus, select:focus, textarea:focus { border-color: var(--gold); }
+  input[type="text"]::placeholder, textarea::placeholder { color: var(--mid); }
+  select { cursor: pointer; } select option { background: var(--grey); }
+  textarea { resize: none; }
+
+  .btn {
+    background: var(--white);
+    border: none; border-radius: 6px;
+    color: var(--black);
+    cursor: pointer;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem; letter-spacing: 0.1em;
+    padding: 0.9rem 2rem;
+    transition: all 0.15s; width: 100%;
+  }
+  .btn:hover { background: var(--cream); transform: translateY(-1px); box-shadow: 0 4px 15px rgba(255,255,255,0.1); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .btn.secondary { background: var(--grey); color: var(--white); border: 1px solid var(--mid); }
+  .btn.secondary:hover { background: var(--mid); }
+  .btn.green { background: var(--green); color: var(--white); }
+  .btn.green:hover { background: var(--green-light); }
+
+  .divider { display: flex; align-items: center; gap: 1rem; font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--mid); }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--mid); }
+  .error-msg { color: var(--accent); font-family: 'DM Mono', monospace; font-size: 0.75rem; text-align: center; min-height: 1.2em; }
+
+  /* WAITING ROOM */
+  #waiting { gap: 1.5rem; justify-content: flex-start; padding-top: 3rem; }
+  .waiting-inner { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 1.25rem; }
+  .room-code-display { text-align: center; background: var(--grey); border-radius: 12px; padding: 1.5rem 2rem; }
+  .room-code-display .label { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--light); letter-spacing: 0.2em; text-transform: uppercase; }
+  .room-code-display .code { font-family: 'Bebas Neue', sans-serif; font-size: 5rem; letter-spacing: 0.2em; line-height: 1; color: var(--white); }
+  .invite-row { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+  .invite-row input { font-size: 0.65rem; padding: 0.5rem 0.75rem; flex: 1; color: var(--light); }
+  .invite-row .btn { width: auto; font-size: 0.85rem; padding: 0.5rem 1rem; flex-shrink: 0; }
+  .qr-wrap { display: flex; justify-content: center; padding: 1rem; background: white; border-radius: 10px; margin-top: 0.75rem; }
+
+  .player-list { display: flex; flex-direction: column; gap: 0.5rem; }
+  .player-list h3 { font-size: 0.85rem; font-family: 'DM Mono', monospace; color: var(--light); letter-spacing: 0.1em; margin-bottom: 0.25rem; }
+  .player-chip { display: flex; align-items: center; gap: 0.75rem; background: var(--grey); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.95rem; }
+  .player-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; flex-shrink: 0; }
+  .badge { margin-left: auto; font-family: 'DM Mono', monospace; font-size: 0.6rem; padding: 2px 6px; border-radius: 3px; letter-spacing: 0.1em; }
+  .badge.host { background: var(--gold); color: var(--black); }
+  .badge.you { background: #2a6; color: white; }
+
+  .host-config { background: var(--grey); border-radius: 8px; padding: 1rem; display: none; flex-direction: column; gap: 0.75rem; }
+
+  /* ROLE REVEAL */
+  #reveal { gap: 2rem; }
+  .role-card {
+    width: min(320px, 90vw); min-height: 240px;
+    border-radius: 16px; padding: 2rem;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 1rem; text-align: center;
+    animation: cardReveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative; overflow: hidden;
+  }
+  @keyframes cardReveal { from { transform: scale(0.5) rotateY(90deg); opacity: 0; } to { transform: scale(1) rotateY(0); opacity: 1; } }
+  .role-card.innocent { background: var(--white); color: var(--black); }
+  .role-card.chameleon { background: var(--black); color: var(--white); border: 2px solid var(--green); }
+  .role-card.chameleon::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(45,106,79,0.2) 0%, transparent 70%); }
+  .role-card .role-label { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.25em; opacity: 0.6; text-transform: uppercase; }
+  .role-card .role-word { font-family: 'Bebas Neue', sans-serif; font-size: 2.5rem; line-height: 1; }
+  .role-card .role-sub { font-size: 0.85rem; opacity: 0.7; font-style: italic; }
+  .cham-emoji { font-size: 3.5rem; animation: sway 2s ease-in-out infinite; }
+  @keyframes sway { 0%,100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
+  .ready-count { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--light); text-align: center; }
+
+  /* GAME SCREEN */
+  #game { padding: 1rem; justify-content: flex-start; gap: 0; }
+  .game-wrap { width: 100%; max-width: 1000px; display: flex; flex-direction: column; gap: 1rem; }
+  .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: var(--grey); border-radius: 10px; flex-wrap: wrap; gap: 0.5rem; min-width: 0; overflow: hidden; }
+  .top-bar .room-pill { font-family: 'DM Mono', monospace; font-size: 0.75rem; background: var(--black); border-radius: 4px; padding: 4px 10px; color: var(--light); }
+  .top-bar .round-info { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 0.05em; }
+  .score-list { display: flex; gap: 1rem; font-size: 0.8rem; flex-wrap: wrap; align-items: center; }
+  .score-item { color: var(--light); font-size: 0.75rem; }
+  .score-item span { color: var(--white); font-weight: 700; font-size: 1.05rem; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.05em; }
+
+  .topic-banner {
+    background: var(--grey); border-radius: 10px; padding: 1.25rem 1.5rem; text-align: center;
+    border-left: 4px solid var(--gold);
+  }
+  .topic-banner .t-label { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--light); letter-spacing: 0.2em; text-transform: uppercase; }
+  .topic-banner .t-topic { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; color: var(--gold); margin-top: 0.25rem; }
+  .topic-banner .t-role { font-family: 'DM Mono', monospace; font-size: 0.75rem; margin-top: 0.35rem; padding: 0.3rem 0.75rem; border-radius: 4px; display: inline-block; }
+  .t-role.innocent { color: var(--gold); border: 1px solid rgba(201,168,76,0.4); }
+  .t-role.chameleon { color: var(--green-light); border: 1px solid rgba(45,106,79,0.6); }
+
+  .game-cols { display: grid; grid-template-columns: 280px 1fr; gap: 1rem; }
+  @media (max-width: 700px) { .game-cols { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--grey); border-radius: 10px; padding: 1rem; }
+  .panel h4 { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--light); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.75rem; }
+
+  /* Player status rows */
+  .ps-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.6rem; border-radius: 6px; background: rgba(255,255,255,0.04); margin-bottom: 0.3rem; font-size: 0.85rem; }
+  .ps-name { flex: 1; font-weight: 600; }
+  .ps-score { font-family: 'Bebas Neue', sans-serif; font-size: 1.05rem; color: var(--white); }
+  .ps-pts { font-size: 0.65rem; color: var(--light); }
+  .ps-badge { font-family: 'DM Mono', monospace; font-size: 0.6rem; padding: 2px 6px; border-radius: 3px; letter-spacing: 0.08em; white-space: nowrap; text-transform: uppercase; }
+  .ps-waiting { background: var(--mid); color: var(--light); }
+  .ps-done { background: var(--green); color: #fff; }
+  .ps-you { background: #1a5276; color: #aef; }
+
+  /* Clue list */
+  .clue-item { background: rgba(255,255,255,0.05); border-radius: 6px; padding: 0.65rem 0.9rem; margin-bottom: 0.4rem; }
+  .clue-item .ci-who { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--gold); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.2rem; }
+  .clue-item .ci-text { font-size: 0.9rem; line-height: 1.4; }
+
+  .clue-input-area { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem; }
+  .status-box { background: rgba(0,0,0,0.25); border-radius: 6px; padding: 0.9rem; font-size: 0.82rem; color: var(--light); line-height: 1.5; margin-top: 0.5rem; }
+  .status-box strong { color: var(--white); }
+
+  /* VOTING */
+  #voting { padding: 1.5rem; justify-content: flex-start; gap: 0; }
+  .voting-wrap { width: 100%; max-width: 700px; display: flex; flex-direction: column; gap: 1.25rem; margin-top: 1.5rem; }
+  .vote-header { text-align: center; }
+  .vote-header h2 { font-size: clamp(2rem, 6vw, 3rem); }
+  .vote-header p { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--light); margin-top: 0.4rem; }
+
+  .vote-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 600px) { .vote-cols { grid-template-columns: 1fr; } }
+
+  .vote-btn {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--grey); border: 1px solid var(--mid);
+    border-radius: 8px; padding: 1rem 1.25rem;
+    cursor: pointer; transition: all 0.15s;
+    font-size: 0.95rem; color: var(--white); font-family: 'DM Sans', sans-serif;
+    width: 100%; text-align: left;
+  }
+  .vote-btn:hover:not(:disabled) { border-color: var(--gold); background: #333; }
+  .vote-btn.my-vote { border-color: var(--accent); background: rgba(230,57,70,0.12); }
+  .vote-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .vb-name { font-weight: 600; }
+  .vb-count { font-family: 'DM Mono', monospace; font-size: 0.8rem; background: var(--black); padding: 2px 8px; border-radius: 3px; color: var(--gold); }
+  .vote-status { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--light); text-align: center; }
+
+  /* RESULTS OVERLAY */
+  #results-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.88); z-index: 1000;
+    align-items: center; justify-content: center;
+    backdrop-filter: blur(6px);
+  }
+  #results-overlay.active { display: flex; }
+  .results-box {
+    background: var(--grey); border-radius: 16px; padding: 2rem;
+    max-width: 500px; width: 90%; text-align: center;
+    display: flex; flex-direction: column; gap: 1.5rem;
+    animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes popIn { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .results-box h2 { font-size: 2.8rem; }
+  .verdict-badge { font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; padding: 0.4rem 1rem; border-radius: 4px; display: inline-block; margin-bottom: 0.25rem; }
+  .verdict-caught { background: var(--green); color: #fff; }
+  .verdict-escaped { background: var(--accent); color: #fff; }
+  .reveal-box { background: var(--black); border-radius: 10px; padding: 1.25rem; }
+  .reveal-box .rl { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--light); letter-spacing: 0.15em; text-transform: uppercase; }
+  .reveal-box .rn { font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; color: var(--gold); margin-top: 0.2rem; }
+  .reveal-box .rw { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--light); margin-top: 0.2rem; }
+  .score-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+  .score-chip { font-family: 'DM Mono', monospace; font-size: 0.75rem; background: var(--black); border: 1px solid var(--mid); border-radius: 4px; padding: 4px 10px; }
+  .score-chip span { color: var(--gold); }
+
+  /* GAMEOVER */
+  #gameover-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.94); z-index: 1001;
+    align-items: center; justify-content: center;
+    backdrop-filter: blur(10px);
+  }
+  #gameover-overlay.active { display: flex; }
+  .gameover-box {
+    background: var(--grey); border: 1px solid var(--gold);
+    border-radius: 16px; padding: 2.5rem;
+    max-width: 500px; width: 90%; text-align: center;
+    display: flex; flex-direction: column; gap: 1.5rem;
+    animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .gameover-box h2 { font-size: 3.5rem; color: var(--gold); }
+  .trophy { font-size: 4rem; animation: bounce 1s ease-in-out infinite alternate; }
+  @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+  .final-scores { display: flex; flex-direction: column; gap: 0.4rem; }
+  .fs-row { display: flex; align-items: center; gap: 0.75rem; background: var(--black); border: 1px solid var(--mid); border-radius: 6px; padding: 0.7rem 1rem; }
+  .fs-rank { font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--light); width: 1.75rem; }
+  .fs-name { flex: 1; font-weight: 600; }
+  .fs-score { font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; color: var(--gold); }
+
+  /* TOASTS */
+  #notif { position: fixed; top: 1rem; right: 1rem; display: flex; flex-direction: column; gap: 0.5rem; z-index: 10000; max-width: 300px; }
+  .toast { background: var(--grey); border-left: 3px solid var(--gold); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.85rem; animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards; pointer-events: none; font-family: 'DM Mono', monospace; }
+  @keyframes slideIn { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes fadeOut { to { opacity: 0; transform: translateX(110%); } }
+
+  .loading { color: var(--light); font-family: 'DM Mono', monospace; font-size: 0.8rem; text-align: center; }
+
+  /* PS badges */
+  .ps-badge { font-family: 'DM Mono', monospace; font-size: 0.6rem; padding: 2px 6px; border-radius: 3px; letter-spacing: 0.08em; white-space: nowrap; text-transform: uppercase; }
+  .ps-waiting { background: var(--mid); color: var(--light); }
+  .ps-done { background: var(--green); color: #fff; }
+  .ps-you { background: #1a5276; color: #aef; }
+
+  @media (max-width: 480px) {
+    .screen { padding: 1rem; }
+    .game-wrap, .voting-wrap { padding: 0; }
+    .top-bar .room-pill { display: none; }
+    #game { padding: 0.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<div id="notif"></div>
+
+<!-- ROUND RESULTS OVERLAY -->
+<div id="results-overlay">
+  <div class="results-box">
+    <div>
+      <div id="ro-verdict"></div>
+      <h2 id="ro-headline"></h2>
+    </div>
+    <div class="reveal-box">
+      <div class="rl">The Chameleon was</div>
+      <div class="rn" id="ro-cham-name"></div>
+      <div class="rw" id="ro-word"></div>
+    </div>
+    <div class="score-chips" id="ro-scores"></div>
+    <button class="btn" id="ro-next-btn">Next Round &rarr;</button>
+    <p class="loading" id="ro-wait-msg"></p>
+  </div>
+</div>
+
+<!-- GAMEOVER OVERLAY -->
+<div id="gameover-overlay">
+  <div class="gameover-box">
+    <div class="trophy">&#x1F98E;</div>
+    <h2>GAME OVER</h2>
+    <div class="final-scores" id="go-scores"></div>
+    <button class="btn green" id="go-play-again" style="display:none">Play Again</button>
+    <p class="loading" id="go-wait-msg"></p>
+  </div>
+</div>
+
+<!-- LOBBY -->
+<div class="screen active" id="lobby">
+  <div class="logo">
+    <h1>THE <span>CHAMELEON</span></h1>
+    <p>One of you is not who they seem</p>
+    <div class="eye">&#x1F441; &#x1F441;</div>
+  </div>
+  <div class="lobby-form">
+    <div class="input-group">
+      <label>Your name</label>
+      <input type="text" id="player-name" placeholder="Enter your name" maxlength="20" autocomplete="off">
+    </div>
+    <button class="btn" onclick="hostGame()">Host a Game</button>
+    <div class="divider">or join existing</div>
+    <div class="input-group">
+      <label>Room Code</label>
+      <input type="text" id="room-code-input" placeholder="e.g. XKQP" maxlength="4"
+        style="text-transform:uppercase;letter-spacing:0.3em;font-size:1.3rem;text-align:center"
+        oninput="this.value=this.value.toUpperCase()">
+    </div>
+    <button class="btn secondary" onclick="joinGame()">Join Game</button>
+    <p class="error-msg" id="lobby-error"></p>
+  </div>
+</div>
+
+<!-- WAITING ROOM -->
+<div class="screen" id="waiting">
+  <div class="waiting-inner">
+    <div class="room-code-display">
+      <p class="label">Room Code</p>
+      <p class="code" id="display-room-code">----</p>
+      <p style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--light);margin-top:0.5rem;">Share code, link, or QR</p>
+      <div class="invite-row">
+        <input type="text" id="invite-link-input" readonly onclick="this.select()">
+        <button class="btn secondary" onclick="copyInviteLink()">Copy Link</button>
+      </div>
+      <div id="qr-container" class="qr-wrap"></div>
+    </div>
+
+    <!-- Host-only config -->
+    <div class="host-config" id="host-config">
+      <div class="input-group">
+        <label>Clue rounds before voting</label>
+        <select id="cfg-rounds">
+          <option value="1">1 round of clues</option>
+          <option value="2" selected>2 rounds of clues</option>
+          <option value="3">3 rounds of clues</option>
+          <option value="4">4 rounds of clues</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>Win condition</label>
+        <select id="cfg-wintarget">
+          <option value="3">First to 3 points</option>
+          <option value="5" selected>First to 5 points</option>
+          <option value="7">First to 7 points</option>
+          <option value="10">First to 10 points</option>
+          <option value="999">Endless (no limit)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="player-list">
+      <h3>Players in room</h3>
+      <div id="waiting-player-list"></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:0.75rem;width:100%;">
+      <button class="btn green" id="start-btn" onclick="startGame()" style="display:none">Start Game</button>
+      <p class="loading" id="waiting-status"></p>
+      <button class="btn secondary" onclick="leaveGame()">Leave Room</button>
+    </div>
+  </div>
+</div>
+
+<!-- ROLE REVEAL -->
+<div class="screen" id="reveal">
+  <div id="role-card-container"></div>
+  <p style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--light);text-align:center;max-width:320px;line-height:1.6;" id="reveal-instructions"></p>
+  <button class="btn" style="max-width:280px;" id="ready-btn" onclick="readyUp()">I&rsquo;m Ready &#x2713;</button>
+  <p class="ready-count" id="ready-count"></p>
+</div>
+
+<!-- GAME (CLUES PHASE) -->
+<div class="screen" id="game">
+  <div class="game-wrap">
+    <div class="top-bar">
+      <span class="room-pill">ROOM: <span id="g-room-code"></span></span>
+      <span class="round-info">Clue Round <span id="g-round">1</span> of <span id="g-total-rounds">2</span></span>
+      <div class="score-list" id="g-scores"></div>
+      <button class="btn secondary" onclick="leaveGame()" style="width:auto;font-size:0.85rem;padding:0.4rem 0.9rem;">Leave</button>
+    </div>
+
+    <div class="topic-banner">
+      <div class="t-label">The Topic</div>
+      <div class="t-topic" id="g-topic"></div>
+      <div class="t-role" id="g-role-hint"></div>
+    </div>
+
+    <div class="game-cols">
+      <div class="panel">
+        <h4>Players</h4>
+        <div id="g-player-status"></div>
+      </div>
+      <div class="panel">
+        <h4>Clues Given</h4>
+        <div id="g-clues-list"></div>
+        <div id="g-input-area" style="display:none;">
+          <div class="clue-input-area">
+            <textarea id="g-clue-input" placeholder="Give a clue that fits the topic..." maxlength="80" rows="2"></textarea>
+            <button class="btn" onclick="submitClue()">Submit Clue</button>
+          </div>
+        </div>
+        <div class="status-box" id="g-status-box" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VOTING -->
+<div class="screen" id="voting">
+  <div class="voting-wrap">
+    <div class="vote-header">
+      <h2>WHO IS THE CHAMELEON?</h2>
+      <p>Discuss what you heard, then cast your vote. Most votes wins.</p>
+    </div>
+
+    <div class="panel">
+      <div class="t-label" style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--light);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.4rem;">Topic: <span id="v-topic" style="color:var(--gold);"></span></div>
+      <h4 style="margin-top:0.5rem;">All Clues</h4>
+      <div id="v-clues-list"></div>
+    </div>
+
+    <div>
+      <h4 style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--light);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.75rem;">Vote for the Chameleon</h4>
+      <div class="vote-cols" id="vote-grid"></div>
+    </div>
+
+    <p class="vote-status" id="vote-status"></p>
+    <button class="btn secondary" onclick="leaveGame()" style="width:auto;align-self:center;font-size:0.85rem;padding:0.5rem 1rem;">Leave</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+//  CONFIGURATION
+// ═══════════════════════════════════════
+const SUPABASE_URL      = 'https://fbcyonrppxttuaiwikmb.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZiY3lvbnJwcHh0dHVhaXdpa21iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0OTM1MTIsImV4cCI6MjA5MzA2OTUxMn0.9MQauhxD0blF2EiYlbh2Ex9PsxKC9FJfMQL1WhJXlP0';
+
+// ═══════════════════════════════════════
+//  WORD BANK
+//  topic = shown to everyone
+//  word  = shown to non-chameleons only
+//  hint  = shown to the chameleon (related but not the word)
+// ═══════════════════════════════════════
+const WORD_BANK = [
+  {topic:"Famous Landmarks",     word:"Eiffel Tower",      hint:"Tall Paris iron structure"},
+  {topic:"Famous Landmarks",     word:"Big Ben",           hint:"London clock tower"},
+  {topic:"Famous Landmarks",     word:"Colosseum",         hint:"Ancient Roman arena"},
+  {topic:"Famous Landmarks",     word:"Stonehenge",        hint:"Mysterious British stone circle"},
+  {topic:"Famous Landmarks",     word:"Niagara Falls",     hint:"Large North American waterfall"},
+  {topic:"Famous Landmarks",     word:"Machu Picchu",      hint:"Inca mountain ruins in Peru"},
+  {topic:"Animals",              word:"Elephant",          hint:"Large grey mammal with a trunk"},
+  {topic:"Animals",              word:"Penguin",           hint:"Black-and-white Antarctic bird"},
+  {topic:"Animals",              word:"Cheetah",           hint:"Fastest spotted big cat"},
+  {topic:"Animals",              word:"Octopus",           hint:"Eight-limbed sea creature"},
+  {topic:"Animals",              word:"Platypus",          hint:"Odd egg-laying Australian mammal"},
+  {topic:"Animals",              word:"Mantis Shrimp",     hint:"Colourful punching crustacean"},
+  {topic:"Sports",               word:"Curling",           hint:"Ice sport with brooms and stones"},
+  {topic:"Sports",               word:"Fencing",           hint:"Sword-based Olympic duel sport"},
+  {topic:"Sports",               word:"Polo",              hint:"Horse-riding ball sport"},
+  {topic:"Sports",               word:"Surfing",           hint:"Riding ocean waves on a board"},
+  {topic:"Sports",               word:"Bobsled",           hint:"Ice track racing in a sled"},
+  {topic:"Sports",               word:"Dressage",          hint:"Competitive horse movement sport"},
+  {topic:"Foods",                word:"Croissant",         hint:"French flaky buttery pastry"},
+  {topic:"Foods",                word:"Paella",            hint:"Spanish saffron rice dish"},
+  {topic:"Foods",                word:"Tiramisu",          hint:"Italian coffee layered dessert"},
+  {topic:"Foods",                word:"Hummus",            hint:"Middle Eastern chickpea dip"},
+  {topic:"Foods",                word:"Kimchi",            hint:"Korean fermented spicy cabbage"},
+  {topic:"Foods",                word:"Poutine",           hint:"Canadian chips with gravy and cheese"},
+  {topic:"Movies",               word:"Inception",         hint:"Dream-within-a-dream heist film"},
+  {topic:"Movies",               word:"Titanic",           hint:"Famous sinking ship romance"},
+  {topic:"Movies",               word:"Parasite",          hint:"Korean Oscar-winning class thriller"},
+  {topic:"Movies",               word:"Gladiator",         hint:"Roman arena revenge epic"},
+  {topic:"Movies",               word:"Jaws",              hint:"Famous summer shark horror"},
+  {topic:"Movies",               word:"The Matrix",        hint:"Red pill blue pill sci-fi film"},
+  {topic:"Music Genres",         word:"Jazz",              hint:"Improvisational American swing music"},
+  {topic:"Music Genres",         word:"Reggae",            hint:"Jamaican rhythmic bass music"},
+  {topic:"Music Genres",         word:"Flamenco",          hint:"Passionate Spanish guitar dance music"},
+  {topic:"Music Genres",         word:"Grime",             hint:"British MC urban rap genre"},
+  {topic:"Music Genres",         word:"Bluegrass",         hint:"American folk banjo string music"},
+  {topic:"Music Genres",         word:"Bossa Nova",        hint:"Brazilian gentle jazz-samba fusion"},
+  {topic:"Jobs",                 word:"Surgeon",           hint:"Doctor who performs operations"},
+  {topic:"Jobs",                 word:"Sommelier",         hint:"Professional restaurant wine expert"},
+  {topic:"Jobs",                 word:"Cartographer",      hint:"Person who makes maps"},
+  {topic:"Jobs",                 word:"Taxidermist",       hint:"Person who preserves dead animals"},
+  {topic:"Jobs",                 word:"Actuary",           hint:"Person who calculates insurance risk"},
+  {topic:"Jobs",                 word:"Luthier",           hint:"Person who builds stringed instruments"},
+  {topic:"Countries",            word:"Bhutan",            hint:"Himalayan Buddhist mountain kingdom"},
+  {topic:"Countries",            word:"Iceland",           hint:"Nordic volcanic island nation"},
+  {topic:"Countries",            word:"Laos",              hint:"Landlocked Southeast Asian country"},
+  {topic:"Countries",            word:"Uruguay",           hint:"Small progressive South American nation"},
+  {topic:"Countries",            word:"Oman",              hint:"Arabian Gulf sultanate"},
+  {topic:"Countries",            word:"Moldova",           hint:"Small Eastern European wine country"},
+  {topic:"Things in a Kitchen",  word:"Colander",          hint:"Bowl full of holes for draining"},
+  {topic:"Things in a Kitchen",  word:"Mandoline",         hint:"Dangerous sharp vegetable slicer"},
+  {topic:"Things in a Kitchen",  word:"Ramekin",           hint:"Small ceramic individual baking dish"},
+  {topic:"Things in a Kitchen",  word:"Whisk",             hint:"Wire loops tool for beating eggs"},
+  {topic:"Things in a Kitchen",  word:"Spatula",           hint:"Flat flexible flipping utensil"},
+  {topic:"Superheroes",          word:"Wolverine",         hint:"Metal-clawed X-Man mutant"},
+  {topic:"Superheroes",          word:"Black Widow",       hint:"Spy assassin female Avenger"},
+  {topic:"Superheroes",          word:"Green Lantern",     hint:"DC hero powered by a magic ring"},
+  {topic:"Superheroes",          word:"Hawkeye",           hint:"Avenger who uses a bow and arrow"},
+  {topic:"Superheroes",          word:"Mystique",          hint:"Blue shape-shifting X-Men villain"},
+  {topic:"Inventions",           word:"Gunpowder",         hint:"Ancient Chinese explosive mixture"},
+  {topic:"Inventions",           word:"Printing Press",    hint:"Gutenberg's mass text machine"},
+  {topic:"Inventions",           word:"Compass",           hint:"Magnetic navigation direction tool"},
+  {topic:"Inventions",           word:"Penicillin",        hint:"Fleming's accidental antibiotic mould"},
+  {topic:"Inventions",           word:"Steam Engine",      hint:"Watt's industrial revolution machine"},
+  {topic:"Dances",               word:"Tango",             hint:"Dramatic Argentine couple dance"},
+  {topic:"Dances",               word:"Breakdancing",      hint:"Acrobatic spinning street dance"},
+  {topic:"Dances",               word:"Waltz",             hint:"Elegant spinning ballroom dance"},
+  {topic:"Dances",               word:"Bhangra",           hint:"Energetic Punjabi harvest dance"},
+  {topic:"Dances",               word:"Moonwalk",          hint:"Michael Jackson backwards glide move"},
+  {topic:"Things in Space",      word:"Nebula",            hint:"Colourful gas cloud where stars form"},
+  {topic:"Things in Space",      word:"Pulsar",            hint:"Rapidly spinning neutron star"},
+  {topic:"Things in Space",      word:"Asteroid Belt",     hint:"Rocky debris ring between planets"},
+  {topic:"Things in Space",      word:"Solar Wind",        hint:"Charged particle stream from the sun"},
+  {topic:"Things in Space",      word:"Event Horizon",     hint:"Point of no return near a black hole"},
+  {topic:"Phobias",              word:"Claustrophobia",    hint:"Fear of enclosed spaces"},
+  {topic:"Phobias",              word:"Arachnophobia",     hint:"Fear of spiders"},
+  {topic:"Phobias",              word:"Acrophobia",        hint:"Fear of heights"},
+  {topic:"Phobias",              word:"Trypophobia",       hint:"Fear of clusters of irregular holes"},
+  {topic:"Phobias",              word:"Thalassophobia",    hint:"Fear of deep open ocean water"},
+  {topic:"Board Games",          word:"Cluedo",            hint:"Murder mystery deduction game"},
+  {topic:"Board Games",          word:"Scrabble",          hint:"Letter tile word-building game"},
+  {topic:"Board Games",          word:"Risk",              hint:"World domination strategy game"},
+  {topic:"Board Games",          word:"Battleship",        hint:"Grid-based naval guessing game"},
+  {topic:"Board Games",          word:"Settlers of Catan", hint:"Resource trading island building game"},
+  {topic:"Things at a Carnival", word:"Ferris Wheel",      hint:"Large rotating observation wheel"},
+  {topic:"Things at a Carnival", word:"Candyfloss",        hint:"Spun pink sugar on a stick"},
+  {topic:"Things at a Carnival", word:"Helter Skelter",    hint:"Spiral sliding tower ride"},
+  {topic:"Things at a Carnival", word:"Hook-a-Duck",       hint:"Water game with rubber ducks"},
+  {topic:"Things at a Carnival", word:"Ghost Train",       hint:"Dark spooky tunnel ride"},
+  {topic:"Cocktails",            word:"Mojito",            hint:"Cuban rum lime and mint drink"},
+  {topic:"Cocktails",            word:"Negroni",           hint:"Bitter Italian gin orange drink"},
+  {topic:"Cocktails",            word:"Margarita",         hint:"Mexican tequila lime salt drink"},
+  {topic:"Cocktails",            word:"Espresso Martini",  hint:"Coffee vodka shaken cocktail"},
+  {topic:"Cocktails",            word:"Aperol Spritz",     hint:"Italian orange prosecco fizz"},
+];
+
+// ═══════════════════════════════════════
+//  ENGINE — follows same patterns as KingZaran game
+// ═══════════════════════════════════════
+
+let sbClient;
+let myPlayerId, myName, roomCode, isHost;
+let channel, heartbeatInterval;
+let gameState = null;
+
+function initSupabase() {
+  if (!sbClient) sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+// ── UTILS ──
+function shuffle(a) {
+  const b = [...a];
+  for (let i = b.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [b[i], b[j]] = [b[j], b[i]];
+  }
+  return b;
+}
+function pick4() {
+  const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  let s = '';
+  for (let i = 0; i < 4; i++) s += c[Math.floor(Math.random() * c.length)];
+  return s;
+}
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function showError(id, msg) { const el = document.getElementById(id); if (el) el.textContent = msg; }
+function toast(msg) {
+  const el = document.createElement('div');
+  el.className = 'toast'; el.textContent = msg;
+  document.getElementById('notif').appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+function pickWord() {
+  const used = gameState?.usedWords || [];
+  const unused = WORD_BANK.filter(w => !used.includes(w.word));
+  const pool = unused.length > 0 ? unused : WORD_BANK;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// ── COOKIE NAME ──
+function rememberName(name) {
+  const d = new Date(); d.setFullYear(d.getFullYear() + 1);
+  document.cookie = `cham_name=${encodeURIComponent(name)};expires=${d.toUTCString()};path=/`;
+}
+function getRememberedName() {
+  const m = document.cookie.match(/(?:^|;\s*)cham_name=([^;]*)/);
+  return m ? decodeURIComponent(m[1]) : '';
+}
+
+// ── SESSION ──
+function saveSession() {
+  sessionStorage.setItem('ch_id', myPlayerId);
+  sessionStorage.setItem('ch_name', myName);
+  sessionStorage.setItem('ch_room', roomCode);
+  sessionStorage.setItem('ch_host', isHost ? '1' : '0');
+}
+function clearSession() {
+  ['ch_id','ch_name','ch_room','ch_host'].forEach(k => sessionStorage.removeItem(k));
+}
+
+async function tryResumeSession() {
+  const savedId   = sessionStorage.getItem('ch_id');
+  const savedName = sessionStorage.getItem('ch_name');
+  const savedRoom = sessionStorage.getItem('ch_room');
+  if (!savedId || !savedRoom) return false;
+  initSupabase();
+  const { data, error } = await sbClient.from('chameleon_rooms').select('*').eq('code', savedRoom).single();
+  if (error || !data) { clearSession(); return false; }
+  const playerInRoom = data.state.players.find(p => p.id === savedId);
+  if (!playerInRoom) {
+    if (data.state.players.length === 0) {
+      // Room is empty — become solo host
+      myPlayerId = savedId; myName = savedName; roomCode = savedRoom; isHost = true;
+      const fresh = makeInitialState();
+      fresh.players = [{ id: myPlayerId, name: myName, score: 0, isHost: true }];
+      await sbClient.from('chameleon_rooms').update({ state: fresh }).eq('code', roomCode);
+      gameState = fresh; saveSession(); subscribeToRoom(); showWaiting();
+      toast("Room was empty — you're the new host!");
+      return true;
+    }
+    clearSession(); return false;
+  }
+  myPlayerId = savedId; myName = savedName; roomCode = savedRoom;
+  isHost = !!playerInRoom.isHost;
+  saveSession(); gameState = data.state;
+  subscribeToRoom();
+  routeToScreen();
+  toast('Welcome back, ' + myName + '!');
+  return true;
+}
+
+function makeInitialState() {
+  return {
+    phase: 'waiting', round: 1, roundsPerVote: 2, winTarget: 5,
+    currentRoundInSet: 1, players: [],
+    word: null, topic: null, hint: null, chameleonId: null,
+    clues: [], votes: {}, readyPlayers: [],
+    usedWords: [], disconnectedPlayers: [], lastResult: null
+  };
+}
+
+function routeToScreen() {
+  if (!gameState) return;
+  const ph = gameState.phase;
+  if (ph === 'waiting') {
+    if (!document.getElementById('waiting').classList.contains('active')) showWaiting();
+    else renderWaiting();
+    return;
+  }
+  // Always close overlays when routing unless specifically these phases
+  if (ph !== 'results')  document.getElementById('results-overlay').classList.remove('active');
+  if (ph !== 'gameover') document.getElementById('gameover-overlay').classList.remove('active');
+
+  if (ph === 'reveal')   { showRevealScreen(); return; }
+  if (ph === 'playing')  { showScreen('game'); renderGame(); return; }
+  if (ph === 'voting')   { showScreen('voting'); renderVoting(); return; }
+  if (ph === 'results')  { showScreen('game'); renderGame(); showRoundResult(); return; }
+  if (ph === 'gameover') { showScreen('game'); renderGame(); showGameOverOverlay(); return; }
+}
+
+// ── HOST GAME ──
+async function hostGame() {
+  showError('lobby-error', '');
+  initSupabase();
+  myName = document.getElementById('player-name').value.trim();
+  if (!myName) return showError('lobby-error', 'Enter your name first.');
+  rememberName(myName);
+  showError('lobby-error', 'Creating room...');
+  myPlayerId = crypto.randomUUID(); roomCode = pick4(); isHost = true;
+  const state = makeInitialState();
+  state.players = [{ id: myPlayerId, name: myName, score: 0, isHost: true }];
+  try {
+    const { error } = await sbClient.from('chameleon_rooms').insert({ code: roomCode, state });
+    if (error) return showError('lobby-error', '\u274c ' + error.message);
+  } catch(e) {
+    return showError('lobby-error', '\u274c Network error: ' + e.message);
+  }
+  showError('lobby-error', '');
+  gameState = state; saveSession(); showWaiting(); subscribeToRoom();
+}
+
+// ── JOIN GAME ──
+async function joinGame() {
+  showError('lobby-error', '');
+  initSupabase();
+  myName = document.getElementById('player-name').value.trim();
+  const code = document.getElementById('room-code-input').value.trim().toUpperCase();
+  if (!myName) return showError('lobby-error', 'Enter your name first.');
+  if (code.length !== 4) return showError('lobby-error', 'Enter a 4-letter room code.');
+  rememberName(myName);
+  const { data, error } = await sbClient.from('chameleon_rooms').select('*').eq('code', code).single();
+  if (error || !data) return showError('lobby-error', 'Room not found — check the code.');
+  if (data.state.players.some(p => p.name.toLowerCase() === myName.toLowerCase()))
+    return showError('lobby-error', '\u274c That name is already taken.');
+  myPlayerId = crypto.randomUUID(); roomCode = code; isHost = false;
+  const state = data.state;
+  // Restore score if they disconnected before
+  const ghost = state.disconnectedPlayers?.find(d => d.name.toLowerCase() === myName.toLowerCase());
+  const restoredScore = ghost ? ghost.score : 0;
+  if (ghost) {
+    state.disconnectedPlayers = state.disconnectedPlayers.filter(d => d.name.toLowerCase() !== myName.toLowerCase());
+    toast('Welcome back! ' + restoredScore + ' point(s) restored.');
+  }
+  state.players.push({ id: myPlayerId, name: myName, score: restoredScore, isHost: false });
+  await sbClient.from('chameleon_rooms').update({ state }).eq('code', roomCode);
+  gameState = state; saveSession(); showWaiting(); subscribeToRoom();
+}
+
+// ── SUBSCRIBE — same pattern as KingZaran game ──
+function subscribeToRoom() {
+  if (channel) sbClient.removeChannel(channel);
+  channel = sbClient
+    .channel('cham-' + roomCode)
+    .on('postgres_changes', {
+      event: 'UPDATE', schema: 'public', table: 'chameleon_rooms', filter: 'code=eq.' + roomCode
+    }, payload => {
+      const ns = payload.new.state;
+      // Check if we've been promoted to host
+      const me = ns.players.find(p => p.id === myPlayerId);
+      if (me && me.isHost && !isHost) { isHost = true; saveSession(); toast('You are now the Host!'); }
+      gameState = ns;
+      routeToScreen();
+    })
+    .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+      leftPresences.forEach(lp => {
+        setTimeout(async () => {
+          const { data } = await sbClient.from('chameleon_rooms').select('state').eq('code', roomCode).single();
+          if (!data) return;
+          if (data.state.players.find(p => p.id === lp.playerId)) return; // rejoined via refresh
+
+          const { data: latest } = await sbClient.from('chameleon_rooms').select('state').eq('code', roomCode).single();
+          if (!latest) return;
+          const latestIdx = latest.state.players.findIndex(p => p.id === lp.playerId);
+          if (latestIdx === -1) { gameState = latest.state; routeToScreen(); return; }
+
+          gameState = latest.state;
+          const leaving = gameState.players[latestIdx];
+          gameState.players.splice(latestIdx, 1);
+
+          if (!gameState.disconnectedPlayers) gameState.disconnectedPlayers = [];
+          gameState.disconnectedPlayers = gameState.disconnectedPlayers.filter(d => d.name.toLowerCase() !== leaving.name.toLowerCase());
+          gameState.disconnectedPlayers.push({ name: leaving.name, score: leaving.score });
+          toast(leaving.name + ' disconnected.');
+
+          if (gameState.players.length === 0) {
+            await sbClient.from('chameleon_rooms').delete().eq('code', roomCode);
+            return;
+          }
+
+          // Assign new host if needed
+          if (leaving.isHost && gameState.players.length > 0) {
+            const nh = gameState.players[Math.floor(Math.random() * gameState.players.length)];
+            nh.isHost = true;
+          }
+
+          // If the chameleon left mid-game, restart the round
+          if (leaving.id === gameState.chameleonId &&
+              (gameState.phase === 'playing' || gameState.phase === 'voting' || gameState.phase === 'reveal')) {
+            toast('The Chameleon left! Starting a new round...');
+            const host = gameState.players.find(p => p.isHost);
+            if (host && host.id === myPlayerId) { isHost = true; saveSession(); await startRound(); }
+            return;
+          }
+
+          const currentHost = gameState.players.find(p => p.isHost);
+          if (currentHost && currentHost.id === myPlayerId) {
+            isHost = true; saveSession(); await pushState();
+          }
+        }, 3000);
+      });
+    })
+    .subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') await channel.track({ playerId: myPlayerId, name: myName });
+    });
+
+  if (heartbeatInterval) clearInterval(heartbeatInterval);
+  heartbeatInterval = setInterval(() => {
+    if (channel) channel.track({ playerId: myPlayerId, name: myName });
+  }, 20000);
+}
+
+async function pushState() {
+  await sbClient.from('chameleon_rooms').update({ state: gameState }).eq('code', roomCode);
+}
+
+// ── WAITING ROOM ──
+function showWaiting() {
+  document.getElementById('display-room-code').textContent = roomCode;
+  setupInviteUI();
+  renderWaiting();
+  showScreen('waiting');
+}
+
+function renderWaiting() {
+  if (!gameState) return;
+  const list = document.getElementById('waiting-player-list');
+  list.innerHTML = gameState.players.map(p => `
+    <div class="player-chip">
+      <span class="dot"></span>
+      <span>${p.name}</span>
+      ${p.isHost ? '<span class="badge host">HOST</span>' : ''}
+      ${p.id === myPlayerId ? '<span class="badge you">YOU</span>' : ''}
+    </div>`).join('');
+
+  const hostCfg = document.getElementById('host-config');
+  const startBtn = document.getElementById('start-btn');
+  const status = document.getElementById('waiting-status');
+  const count = gameState.players.length;
+  const wt = gameState.winTarget || 5;
+  const rr = gameState.roundsPerVote || 2;
+  const wtLabel = wt >= 999 ? 'Endless' : `First to ${wt} pts`;
+
+  if (isHost) {
+    hostCfg.style.display = 'flex';
+    startBtn.style.display = 'block';
+    startBtn.disabled = count < 3;
+    status.textContent = count < 3
+      ? `Need at least 3 players (${count}/3 joined)`
+      : `${count} players ready · ${rr} clue round(s) · ${wtLabel}`;
+  } else {
+    hostCfg.style.display = 'none';
+    status.textContent = `${count} player(s) · Waiting for host to start...`;
+  }
+}
+
+// ── START GAME ──
+async function startGame() {
+  if (!isHost || gameState.players.length < 3) return;
+  gameState.roundsPerVote = parseInt(document.getElementById('cfg-rounds').value || '2');
+  gameState.winTarget = parseInt(document.getElementById('cfg-wintarget').value || '5');
+  gameState.round = 1;
+  await startRound();
+}
+
+async function startRound() {
+  const entry = pickWord();
+  if (!gameState.usedWords) gameState.usedWords = [];
+  gameState.usedWords.push(entry.word);
+  if (gameState.usedWords.length > Math.floor(WORD_BANK.length / 2)) gameState.usedWords = gameState.usedWords.slice(-10);
+
+  const chamIdx = Math.floor(Math.random() * gameState.players.length);
+  gameState.chameleonId = gameState.players[chamIdx].id;
+  gameState.word = entry.word;
+  gameState.topic = entry.topic;
+  gameState.hint = entry.hint;
+  gameState.clues = [];
+  gameState.votes = {};
+  gameState.readyPlayers = [];
+  gameState.currentRoundInSet = 1;
+  gameState.lastResult = null;
+  gameState.phase = 'reveal';
+  await pushState();
+}
+
+// ── ROLE REVEAL ──
+function showRevealScreen() {
+  showScreen('reveal');
+  renderReveal();
+}
+
+function renderReveal() {
+  if (!gameState) return;
+  const isCham = gameState.chameleonId === myPlayerId;
+  const rp = gameState.readyPlayers || [];
+  const alreadyReady = rp.includes(myPlayerId);
+
+  const cardEl = document.getElementById('role-card-container');
+  const instr = document.getElementById('reveal-instructions');
+  const readyEl = document.getElementById('ready-count');
+  const readyBtn = document.getElementById('ready-btn');
+
+  if (isCham) {
+    cardEl.innerHTML = `<div class="role-card chameleon">
+      <div class="role-label">Your Role</div>
+      <div class="cham-emoji">&#x1F98E;</div>
+      <div class="role-word">THE CHAMELEON</div>
+      <div class="role-sub">Hint: "${gameState.hint}"</div>
+    </div>`;
+    instr.textContent = `You are the Chameleon! You don't know the secret word. The topic is "${gameState.topic}" and your hint is "${gameState.hint}". Blend in — give clues that seem to fit without revealing you don't know the word. Don't get voted out!`;
+  } else {
+    cardEl.innerHTML = `<div class="role-card innocent">
+      <div class="role-label" style="color:var(--mid)">The secret word is</div>
+      <div class="role-word">${gameState.word}</div>
+      <div class="role-sub">Topic: ${gameState.topic}</div>
+    </div>`;
+    instr.textContent = `Remember: "${gameState.word}". Give a clue that proves you know it without making it too obvious — the Chameleon is listening! After ${gameState.roundsPerVote} round(s) of clues, everyone votes to expose the imposter.`;
+  }
+
+  readyEl.textContent = `${rp.length} / ${gameState.players.length} ready`;
+  if (readyBtn) {
+    readyBtn.textContent = alreadyReady ? 'Waiting for others...' : "I'm Ready ✓";
+    readyBtn.disabled = alreadyReady;
+  }
+}
+
+async function readyUp() {
+  if (!gameState) return;
+  if (!gameState.readyPlayers) gameState.readyPlayers = [];
+  if (gameState.readyPlayers.includes(myPlayerId)) return;
+  gameState.readyPlayers.push(myPlayerId);
+  if (gameState.readyPlayers.length >= gameState.players.length) {
+    gameState.phase = 'playing';
+    gameState.currentRoundInSet = 1;
+  }
+  await pushState();
+}
+
+// ── GAME / CLUES ──
+function renderGame() {
+  if (!gameState) return;
+  document.getElementById('g-room-code').textContent = roomCode;
+  document.getElementById('g-round').textContent = gameState.currentRoundInSet || 1;
+  document.getElementById('g-total-rounds').textContent = gameState.roundsPerVote || 2;
+  document.getElementById('g-topic').textContent = gameState.topic || '';
+  document.getElementById('g-scores').innerHTML = gameState.players
+    .map(p => `<span class="score-item">${p.name}: <span>${p.score}pts</span></span>`).join('');
+
+  const isCham = gameState.chameleonId === myPlayerId;
+  const hintEl = document.getElementById('g-role-hint');
+  if (isCham) {
+    hintEl.textContent = 'You are the Chameleon — your hint: "' + gameState.hint + '"';
+    hintEl.className = 't-role chameleon';
+  } else {
+    hintEl.textContent = 'Secret word: ' + gameState.word;
+    hintEl.className = 't-role innocent';
+  }
+
+  renderGamePlayerStatus();
+  renderClues();
+}
+
+function renderGamePlayerStatus() {
+  const el = document.getElementById('g-player-status');
+  if (!el || !gameState) return;
+  const clues = gameState.clues || [];
+  el.innerHTML = gameState.players.map(p => {
+    const hasClued = clues.some(c => c.playerId === p.id);
+    const isMe = p.id === myPlayerId;
+    const badge = gameState.phase === 'playing'
+      ? (hasClued ? '<span class="ps-badge ps-done">✓ Clued</span>' : '<span class="ps-badge ps-waiting">Thinking...</span>')
+      : '';
+    const youBadge = isMe ? '<span class="ps-badge ps-you">You</span>' : '';
+    return `<div class="ps-row">
+      <span class="ps-name">${p.name}</span>
+      <span class="ps-score">${p.score}<span class="ps-pts">pts</span></span>
+      ${youBadge}${badge}
+    </div>`;
+  }).join('');
+}
+
+function renderClues() {
+  const el = document.getElementById('g-clues-list');
+  const inputArea = document.getElementById('g-input-area');
+  const statusBox = document.getElementById('g-status-box');
+  if (!el) return;
+  const clues = gameState.clues || [];
+  const myClue = clues.find(c => c.playerId === myPlayerId);
+  const allClued = gameState.players.every(p => clues.some(c => c.playerId === p.id));
+
+  el.innerHTML = clues.map(c => {
+    const player = gameState.players.find(p => p.id === c.playerId);
+    return `<div class="clue-item">
+      <div class="ci-who">${player ? player.name : '?'}</div>
+      <div class="ci-text">${c.text}</div>
+    </div>`;
+  }).join('');
+
+  if (gameState.phase === 'playing' && !myClue) {
+    inputArea.style.display = 'block';
+    statusBox.style.display = 'none';
+  } else {
+    inputArea.style.display = 'none';
+    statusBox.style.display = 'block';
+    if (gameState.phase === 'playing') {
+      const waiting = gameState.players.filter(p => !clues.some(c => c.playerId === p.id));
+      statusBox.innerHTML = allClued
+        ? 'All clues are in! Moving to next phase...'
+        : 'Waiting for: <strong>' + waiting.map(p => p.name).join(', ') + '</strong>';
+    } else {
+      statusBox.innerHTML = '';
+    }
+  }
+}
+
+async function submitClue() {
+  const input = document.getElementById('g-clue-input');
+  const text = input.value.trim();
+  if (!text) return;
+  if (gameState.clues.some(c => c.playerId === myPlayerId)) return;
+  input.value = '';
+  if (!gameState.clues) gameState.clues = [];
+  gameState.clues.push({ playerId: myPlayerId, text });
+
+  const allClued = gameState.players.every(p => gameState.clues.some(c => c.playerId === p.id));
+  if (allClued) {
+    const inSet = gameState.currentRoundInSet || 1;
+    if (inSet >= gameState.roundsPerVote) {
+      gameState.phase = 'voting';
+    } else {
+      gameState.currentRoundInSet = inSet + 1;
+      gameState.round = (gameState.round || 1) + 1;
+    }
+  }
+  await pushState();
+}
+
+// ── VOTING ──
+function renderVoting() {
+  if (!gameState) return;
+  document.getElementById('v-topic').textContent = gameState.topic || '';
+
+  const vClues = document.getElementById('v-clues-list');
+  vClues.innerHTML = (gameState.clues || []).map(c => {
+    const player = gameState.players.find(p => p.id === c.playerId);
+    return `<div class="clue-item">
+      <div class="ci-who">${player ? player.name : '?'}</div>
+      <div class="ci-text">${c.text}</div>
+    </div>`;
+  }).join('');
+
+  const grid = document.getElementById('vote-grid');
+  const status = document.getElementById('vote-status');
+  const votes = gameState.votes || {};
+  const voteCounts = {};
+  Object.values(votes).forEach(vid => { voteCounts[vid] = (voteCounts[vid] || 0) + 1; });
+  const totalVotes = Object.keys(votes).length;
+  const myVoteId = votes[myPlayerId];
+  const alreadyVoted = !!myVoteId;
+
+  grid.innerHTML = gameState.players.map(p => {
+    if (p.id === myPlayerId) return '';
+    const count = voteCounts[p.id] || 0;
+    const isMyVote = myVoteId === p.id;
+    return `<button class="vote-btn${isMyVote ? ' my-vote' : ''}" onclick="castVote('${p.id}')" ${alreadyVoted ? 'disabled' : ''}>
+      <span class="vb-name">${p.name}</span>
+      <span class="vb-count">${count} vote${count !== 1 ? 's' : ''}</span>
+    </button>`;
+  }).join('');
+
+  status.textContent = `${totalVotes} / ${gameState.players.length} voted`;
+
+  if (totalVotes >= gameState.players.length && isHost) {
+    resolveVote();
+  }
+}
+
+async function castVote(targetId) {
+  if (!gameState || gameState.votes[myPlayerId]) return;
+  if (!gameState.votes) gameState.votes = {};
+  gameState.votes[myPlayerId] = targetId;
+  const totalVotes = Object.keys(gameState.votes).length;
+  if (totalVotes >= gameState.players.length && isHost) {
+    await resolveVote();
+  } else {
+    await pushState();
+  }
+}
+
+async function resolveVote() {
+  const votes = gameState.votes || {};
+  const voteCounts = {};
+  Object.values(votes).forEach(vid => { voteCounts[vid] = (voteCounts[vid] || 0) + 1; });
+  const maxVotes = Math.max(0, ...Object.values(voteCounts));
+  const topIds = Object.keys(voteCounts).filter(id => voteCounts[id] === maxVotes);
+  const accusedId = topIds[Math.floor(Math.random() * topIds.length)];
+  const caught = accusedId === gameState.chameleonId;
+
+  // Award points
+  if (caught) {
+    gameState.players.forEach(p => { if (p.id !== gameState.chameleonId) p.score += 1; });
+  } else {
+    const cham = gameState.players.find(p => p.id === gameState.chameleonId);
+    if (cham) cham.score += 2;
+  }
+
+  gameState.lastResult = {
+    caught,
+    accusedId,
+    accusedName: gameState.players.find(p => p.id === accusedId)?.name
+  };
+
+  const winTarget = gameState.winTarget || 5;
+  const topScore = Math.max(...gameState.players.map(p => p.score));
+  gameState.phase = (winTarget < 999 && topScore >= winTarget) ? 'gameover' : 'results';
+  await pushState();
+}
+
+// ── ROUND RESULT ──
+function showRoundResult() {
+  if (!gameState.lastResult) return;
+  const { caught } = gameState.lastResult;
+  const cham = gameState.players.find(p => p.id === gameState.chameleonId);
+  const overlay = document.getElementById('results-overlay');
+
+  document.getElementById('ro-verdict').innerHTML =
+    `<span class="verdict-badge ${caught ? 'verdict-caught' : 'verdict-escaped'}">${caught ? 'Chameleon Caught!' : 'Chameleon Escaped!'}</span>`;
+  document.getElementById('ro-headline').textContent = caught
+    ? 'The players win!'
+    : (cham?.name || '?') + ' wins this round!';
+  document.getElementById('ro-cham-name').textContent = cham?.name || '?';
+  document.getElementById('ro-word').textContent = 'The word was: ' + gameState.word;
+  document.getElementById('ro-scores').innerHTML = gameState.players
+    .map(p => `<span class="score-chip">${p.name} <span>${p.score}pts</span></span>`).join('');
+
+  const nextBtn = document.getElementById('ro-next-btn');
+  const waitMsg = document.getElementById('ro-wait-msg');
+  nextBtn.style.display = isHost ? 'block' : 'none';
+  waitMsg.textContent = isHost ? '' : 'Waiting for host to start next round...';
+  nextBtn.onclick = nextRound;
+  overlay.classList.add('active');
+}
+
+// ── GAME OVER ──
+function showGameOverOverlay() {
+  document.getElementById('results-overlay').classList.remove('active');
+  const overlay = document.getElementById('gameover-overlay');
+  const sorted = [...gameState.players].sort((a, b) => b.score - a.score);
+  const medals = ['&#x1F947;', '&#x1F948;', '&#x1F949;'];
+  document.getElementById('go-scores').innerHTML = sorted.map((p, i) => `
+    <div class="fs-row">
+      <span class="fs-rank">${medals[i] || ''}</span>
+      <span class="fs-name">${p.name}</span>
+      <span class="fs-score">${p.score}<span style="font-size:0.7rem;color:var(--light);">pts</span></span>
+    </div>`).join('');
+  const btn = document.getElementById('go-play-again');
+  const msg = document.getElementById('go-wait-msg');
+  btn.style.display = isHost ? 'block' : 'none';
+  msg.textContent = isHost ? '' : 'Waiting for host to start a new game...';
+  btn.onclick = playAgain;
+  overlay.classList.add('active');
+}
+
+async function nextRound() {
+  if (!isHost) return;
+  document.getElementById('results-overlay').classList.remove('active');
+  gameState.round = (gameState.round || 1) + 1;
+  await startRound();
+}
+
+async function playAgain() {
+  if (!isHost) return;
+  document.getElementById('gameover-overlay').classList.remove('active');
+  gameState.round = 1;
+  gameState.players.forEach(p => p.score = 0);
+  gameState.usedWords = [];
+  await startRound();
+}
+
+// ── LEAVE GAME ──
+async function leaveGame() {
+  clearSession();
+  if (heartbeatInterval) clearInterval(heartbeatInterval);
+  if (channel) { sbClient.removeChannel(channel); channel = null; }
+  if (!gameState) { showScreen('lobby'); return; }
+
+  const idx = gameState.players.findIndex(p => p.id === myPlayerId);
+  if (idx !== -1) {
+    const me = gameState.players[idx];
+    if (!gameState.disconnectedPlayers) gameState.disconnectedPlayers = [];
+    gameState.disconnectedPlayers.push({ name: me.name, score: me.score });
+    gameState.players.splice(idx, 1);
+  }
+
+  if (gameState.players.length === 0) {
+    await sbClient.from('chameleon_rooms').delete().eq('code', roomCode);
+  } else {
+    if (isHost) {
+      const nh = gameState.players[Math.floor(Math.random() * gameState.players.length)];
+      nh.isHost = true;
+    }
+    await sbClient.from('chameleon_rooms').update({ state: gameState }).eq('code', roomCode);
+  }
+
+  gameState = null; roomCode = null; isHost = false; myPlayerId = null; myName = null;
+  document.getElementById('results-overlay').classList.remove('active');
+  document.getElementById('gameover-overlay').classList.remove('active');
+  showScreen('lobby');
+}
+
+// ── INVITE / QR ──
+function getInviteUrl() { return window.location.href.split('?')[0] + '?room=' + roomCode; }
+function setupInviteUI() {
+  const url = getInviteUrl();
+  const input = document.getElementById('invite-link-input');
+  if (input) input.value = url;
+  const qrEl = document.getElementById('qr-container');
+  if (qrEl) {
+    qrEl.innerHTML = '';
+    new QRCode(qrEl, { text: url, width: 150, height: 150, colorDark: '#0a0a0a', colorLight: '#ffffff' });
+  }
+}
+function copyInviteLink() {
+  navigator.clipboard.writeText(getInviteUrl())
+    .then(() => toast('Invite link copied!'))
+    .catch(() => { document.getElementById('invite-link-input').select(); document.execCommand('copy'); toast('Copied!'); });
+}
+
+// ── UNLOAD — same pattern as KingZaran ──
+let pageIsUnloading = false;
+window.addEventListener('beforeunload', () => { pageIsUnloading = true; });
+window.addEventListener('pagehide', (e) => {
+  if (!e.persisted) {
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
+    if (channel) sbClient.removeChannel(channel);
+  }
+});
+
+// ── BOOT ──
+(async () => {
+  const urlRoom = new URLSearchParams(window.location.search).get('room');
+  if (urlRoom) document.getElementById('room-code-input').value = urlRoom.toUpperCase();
+  const remembered = getRememberedName();
+  if (remembered) document.getElementById('player-name').value = remembered;
+  const resumed = await tryResumeSession();
+  if (!resumed) showScreen('lobby');
+})();
+
+// Expose globals
+window.hostGame = hostGame;
+window.joinGame = joinGame;
+window.startGame = startGame;
+window.readyUp = readyUp;
+window.submitClue = submitClue;
+window.castVote = castVote;
+window.nextRound = nextRound;
+window.playAgain = playAgain;
+window.leaveGame = leaveGame;
+window.copyInviteLink = copyInviteLink;
+</script>
+</body>
+</html>
