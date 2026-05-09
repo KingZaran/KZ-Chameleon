@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>The Chameleon</title>
+<meta name="google-site-verification" content="WcQgtDIQGivwwIGqB-zyAsv0BNRQe_7Mou0CWzBSFLM" />
+<title>KZ Chameleon</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;600&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" href="favicon.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -53,8 +54,6 @@
   .logo h1 { font-size: clamp(3rem, 10vw, 6rem); line-height: 1; color: var(--white); }
   .logo h1 span { color: var(--gold); }
   .logo p { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--light); letter-spacing: 0.2em; text-transform: uppercase; margin-top: 0.5rem; }
-  .logo .eye { font-size: 1.5rem; opacity: 0.2; letter-spacing: 0.5em; margin-top: 0.5rem; }
-
   .lobby-form { display: flex; flex-direction: column; gap: 1rem; width: 100%; max-width: 360px; }
   .input-group { display: flex; flex-direction: column; gap: 0.4rem; }
   .input-group label { font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.15em; color: var(--light); text-transform: uppercase; }
@@ -308,9 +307,8 @@
 <!-- LOBBY -->
 <div class="screen active" id="lobby">
   <div class="logo">
-    <h1>THE <span>CHAMELEON</span></h1>
+    <h1>KZ <span>CHAMELEON</span></h1>
     <p>One of you is not who they seem</p>
-    <div class="eye">&#x1F441; &#x1F441;</div>
   </div>
   <div class="lobby-form">
     <div class="input-group">
@@ -321,7 +319,7 @@
     <div class="divider">or join existing</div>
     <div class="input-group">
       <label>Room Code</label>
-      <input type="text" id="room-code-input" placeholder="e.g. XKQP" maxlength="4"
+      <input type="text" id="room-code-input" placeholder="EXAMPLE: ABCD" maxlength="4"
         style="text-transform:uppercase;letter-spacing:0.3em;font-size:1.3rem;text-align:center"
         oninput="this.value=this.value.toUpperCase()">
     </div>
@@ -336,7 +334,7 @@
     <div class="room-code-display">
       <p class="label">Room Code</p>
       <p class="code" id="display-room-code">----</p>
-      <p style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--light);margin-top:0.5rem;">Share code, link, or QR</p>
+      <p style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--light);margin-top:0.5rem;">Share this code, link, or QR with friends</p>
       <div class="invite-row">
         <input type="text" id="invite-link-input" readonly onclick="this.select()">
         <button class="btn secondary" onclick="copyInviteLink()">Copy Link</button>
@@ -454,150 +452,149 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // ═══════════════════════════════════════
 const WORD_BANK = [
   // Animals
-  {topic:"Animals", word:"Shark",      hint:"Dolphin"},
-  {topic:"Animals", word:"Elephant",   hint:"Rhino"},
-  {topic:"Animals", word:"Penguin",    hint:"Puffin"},
-  {topic:"Animals", word:"Tiger",      hint:"Cheetah"},
-  {topic:"Animals", word:"Crocodile",  hint:"Lizard"},
-  {topic:"Animals", word:"Gorilla",    hint:"Chimp"},
-  {topic:"Animals", word:"Jellyfish",  hint:"Octopus"},
-  {topic:"Animals", word:"Eagle",      hint:"Hawk"},
-  {topic:"Animals", word:"Flamingo",   hint:"Swan"},
-  {topic:"Animals", word:"Kangaroo",   hint:"Wallaby"},
-
+  {topic:"Animals", word:"Shark",     hint:"Fins"},
+  {topic:"Animals", word:"Elephant",  hint:"Trunk"},
+  {topic:"Animals", word:"Penguin",   hint:"Waddle"},
+  {topic:"Animals", word:"Tiger",     hint:"Stripes"},
+  {topic:"Animals", word:"Crocodile", hint:"Swamp"},
+  {topic:"Animals", word:"Gorilla",   hint:"Chest"},
+  {topic:"Animals", word:"Jellyfish", hint:"Sting"},
+  {topic:"Animals", word:"Eagle",     hint:"Talons"},
+  {topic:"Animals", word:"Flamingo",  hint:"Pink"},
+  {topic:"Animals", word:"Kangaroo",  hint:"Pouch"},
+ 
   // Food
-  {topic:"Food", word:"Pizza",      hint:"Pasta"},
-  {topic:"Food", word:"Burger",     hint:"Hotdog"},
-  {topic:"Food", word:"Sushi",      hint:"Noodles"},
-  {topic:"Food", word:"Chocolate",  hint:"Caramel"},
-  {topic:"Food", word:"Chips",      hint:"Crisps"},
-  {topic:"Food", word:"Taco",       hint:"Wrap"},
-  {topic:"Food", word:"Waffle",     hint:"Pancake"},
-  {topic:"Food", word:"Popcorn",    hint:"Nachos"},
-  {topic:"Food", word:"Curry",      hint:"Stew"},
-  {topic:"Food", word:"Spaghetti",  hint:"Noodles"},
-
+  {topic:"Food", word:"Pizza",     hint:"Dough"},
+  {topic:"Food", word:"Burger",    hint:"Bun"},
+  {topic:"Food", word:"Sushi",     hint:"Raw"},
+  {topic:"Food", word:"Chocolate", hint:"Cocoa"},
+  {topic:"Food", word:"Chips",     hint:"Fry"},
+  {topic:"Food", word:"Taco",      hint:"Shell"},
+  {topic:"Food", word:"Waffle",    hint:"Grid"},
+  {topic:"Food", word:"Popcorn",   hint:"Cinema"},
+  {topic:"Food", word:"Curry",     hint:"Spicy"},
+  {topic:"Food", word:"Spaghetti", hint:"Bolognese"},
+ 
   // Sports
-  {topic:"Sports", word:"Football",   hint:"Rugby"},
-  {topic:"Sports", word:"Swimming",   hint:"Diving"},
-  {topic:"Sports", word:"Tennis",     hint:"Badminton"},
-  {topic:"Sports", word:"Basketball", hint:"Netball"},
-  {topic:"Sports", word:"Cycling",    hint:"Skating"},
-  {topic:"Sports", word:"Boxing",     hint:"Wrestling"},
-  {topic:"Sports", word:"Gymnastics", hint:"Acrobatics"},
-  {topic:"Sports", word:"Archery",    hint:"Darts"},
-  {topic:"Sports", word:"Skiing",     hint:"Snowboarding"},
-  {topic:"Sports", word:"Volleyball", hint:"Basketball"},
-
+  {topic:"Sports", word:"Football",   hint:"Penalty"},
+  {topic:"Sports", word:"Swimming",   hint:"Goggles"},
+  {topic:"Sports", word:"Tennis",     hint:"Racket"},
+  {topic:"Sports", word:"Basketball", hint:"Hoop"},
+  {topic:"Sports", word:"Cycling",    hint:"Pedals"},
+  {topic:"Sports", word:"Boxing",     hint:"Gloves"},
+  {topic:"Sports", word:"Gymnastics", hint:"Cartwheel"},
+  {topic:"Sports", word:"Archery",    hint:"Bow"},
+  {topic:"Sports", word:"Skiing",     hint:"Slope"},
+  {topic:"Sports", word:"Volleyball", hint:"Net"},
+ 
   // Countries
-  {topic:"Countries", word:"France",    hint:"Belgium"},
-  {topic:"Countries", word:"Japan",     hint:"China"},
-  {topic:"Countries", word:"Brazil",    hint:"Argentina"},
-  {topic:"Countries", word:"Egypt",     hint:"Morocco"},
-  {topic:"Countries", word:"Australia", hint:"NewZealand"},
-  {topic:"Countries", word:"Canada",    hint:"America"},
-  {topic:"Countries", word:"India",     hint:"Pakistan"},
-  {topic:"Countries", word:"Germany",   hint:"Austria"},
-  {topic:"Countries", word:"Mexico",    hint:"Colombia"},
-  {topic:"Countries", word:"Russia",    hint:"Ukraine"},
-
+  {topic:"Countries", word:"France",    hint:"Baguette"},
+  {topic:"Countries", word:"Japan",     hint:"Sushi"},
+  {topic:"Countries", word:"Brazil",    hint:"Carnival"},
+  {topic:"Countries", word:"Egypt",     hint:"Pyramids"},
+  {topic:"Countries", word:"Australia", hint:"Kangaroo"},
+  {topic:"Countries", word:"Canada",    hint:"Maple"},
+  {topic:"Countries", word:"India",     hint:"Curry"},
+  {topic:"Countries", word:"Germany",   hint:"Sausage"},
+  {topic:"Countries", word:"Mexico",    hint:"Taco"},
+  {topic:"Countries", word:"Russia",    hint:"Snow"},
+ 
   // Jobs
-  {topic:"Jobs", word:"Doctor",     hint:"Nurse"},
-  {topic:"Jobs", word:"Teacher",    hint:"Lecturer"},
-  {topic:"Jobs", word:"Pilot",      hint:"Captain"},
-  {topic:"Jobs", word:"Chef",       hint:"Baker"},
-  {topic:"Jobs", word:"Footballer", hint:"Athlete"},
-  {topic:"Jobs", word:"Firefighter",hint:"Paramedic"},
-  {topic:"Jobs", word:"Police",     hint:"Guard"},
-  {topic:"Jobs", word:"Astronaut",  hint:"Cosmonaut"},
-  {topic:"Jobs", word:"Scientist",  hint:"Engineer"},
-  {topic:"Jobs", word:"Actor",      hint:"Comedian"},
-
+  {topic:"Jobs", word:"Doctor",      hint:"Stethoscope"},
+  {topic:"Jobs", word:"Teacher",     hint:"Whiteboard"},
+  {topic:"Jobs", word:"Pilot",       hint:"Cockpit"},
+  {topic:"Jobs", word:"Chef",        hint:"Kitchen"},
+  {topic:"Jobs", word:"Footballer",  hint:"Boots"},
+  {topic:"Jobs", word:"Firefighter", hint:"Hose"},
+  {topic:"Jobs", word:"Police",      hint:"Handcuffs"},
+  {topic:"Jobs", word:"Astronaut",   hint:"Helmet"},
+  {topic:"Jobs", word:"Scientist",   hint:"Lab"},
+  {topic:"Jobs", word:"Actor",       hint:"Stage"},
+ 
   // Movies
-  {topic:"Movies", word:"Titanic",    hint:"Avatar"},
-  {topic:"Movies", word:"Frozen",     hint:"Moana"},
-  {topic:"Movies", word:"Jaws",       hint:"Shark"},
-  {topic:"Movies", word:"Matilda",    hint:"Charlie"},
-  {topic:"Movies", word:"Grease",     hint:"Hairspray"},
-  {topic:"Movies", word:"Shrek",      hint:"Donkey"},
-  {topic:"Movies", word:"Toy Story",  hint:"Robots"},
-  {topic:"Movies", word:"Jumanji",    hint:"Jungle"},
-  {topic:"Movies", word:"Moana",      hint:"Frozen"},
-  {topic:"Movies", word:"Minions",    hint:"Despicable"},
-
-  // Things in Space
-  {topic:"Space", word:"Moon",       hint:"Sun"},
-  {topic:"Space", word:"Mars",       hint:"Venus"},
-  {topic:"Space", word:"Asteroid",   hint:"Meteor"},
-  {topic:"Space", word:"Rocket",     hint:"Shuttle"},
-  {topic:"Space", word:"Satellite",  hint:"Station"},
-  {topic:"Space", word:"Galaxy",     hint:"Universe"},
-  {topic:"Space", word:"Comet",      hint:"Asteroid"},
-  {topic:"Space", word:"Telescope",  hint:"Binoculars"},
-  {topic:"Space", word:"Gravity",    hint:"Orbit"},
-  {topic:"Space", word:"Alien",      hint:"Robot"},
-
+  {topic:"Movies", word:"Titanic",   hint:"Iceberg"},
+  {topic:"Movies", word:"Frozen",    hint:"Elsa"},
+  {topic:"Movies", word:"Jaws",      hint:"Beach"},
+  {topic:"Movies", word:"Matilda",   hint:"Magic"},
+  {topic:"Movies", word:"Grease",    hint:"Leather"},
+  {topic:"Movies", word:"Shrek",     hint:"Swamp"},
+  {topic:"Movies", word:"Toy Story", hint:"Woody"},
+  {topic:"Movies", word:"Jumanji",   hint:"Board"},
+  {topic:"Movies", word:"Moana",     hint:"Ocean"},
+  {topic:"Movies", word:"Minions",   hint:"Yellow"},
+ 
+  // Space
+  {topic:"Space", word:"Moon",      hint:"Crater"},
+  {topic:"Space", word:"Mars",      hint:"Red"},
+  {topic:"Space", word:"Asteroid",  hint:"Rocky"},
+  {topic:"Space", word:"Rocket",    hint:"Launch"},
+  {topic:"Space", word:"Satellite", hint:"Orbit"},
+  {topic:"Space", word:"Galaxy",    hint:"Milky"},
+  {topic:"Space", word:"Comet",     hint:"Tail"},
+  {topic:"Space", word:"Telescope", hint:"Lens"},
+  {topic:"Space", word:"Gravity",   hint:"Pull"},
+  {topic:"Space", word:"Alien",     hint:"Abduction"},
+ 
   // Nature
-  {topic:"Nature", word:"Volcano",    hint:"Mountain"},
-  {topic:"Nature", word:"Rainbow",    hint:"Sunset"},
+  {topic:"Nature", word:"Volcano",    hint:"Lava"},
+  {topic:"Nature", word:"Rainbow",    hint:"Prism"},
   {topic:"Nature", word:"Thunder",    hint:"Lightning"},
-  {topic:"Nature", word:"Desert",     hint:"Sahara"},
-  {topic:"Nature", word:"Ocean",      hint:"Sea"},
-  {topic:"Nature", word:"Forest",     hint:"Jungle"},
-  {topic:"Nature", word:"River",      hint:"Stream"},
-  {topic:"Nature", word:"Earthquake", hint:"Tsunami"},
-  {topic:"Nature", word:"Snowflake",  hint:"Raindrop"},
-  {topic:"Nature", word:"Tornado",    hint:"Hurricane"},
-
+  {topic:"Nature", word:"Desert",     hint:"Sand"},
+  {topic:"Nature", word:"Ocean",      hint:"Waves"},
+  {topic:"Nature", word:"Forest",     hint:"Trees"},
+  {topic:"Nature", word:"River",      hint:"Current"},
+  {topic:"Nature", word:"Earthquake", hint:"Tremor"},
+  {topic:"Nature", word:"Snowflake",  hint:"Crystal"},
+  {topic:"Nature", word:"Tornado",    hint:"Funnel"},
+ 
   // School
-  {topic:"School", word:"Homework",   hint:"Revision"},
-  {topic:"School", word:"Library",    hint:"Classroom"},
-  {topic:"School", word:"Maths",      hint:"Science"},
-  {topic:"School", word:"Pencil",     hint:"Pen"},
-  {topic:"School", word:"Ruler",      hint:"Protractor"},
-  {topic:"School", word:"Assembly",   hint:"Registration"},
-  {topic:"School", word:"Detention",  hint:"Exclusion"},
-  {topic:"School", word:"Lunch",      hint:"Breakfast"},
-  {topic:"School", word:"PE",         hint:"Drama"},
-  {topic:"School", word:"Exam",       hint:"Test"},
-
-  // Things at Home
-  {topic:"At Home", word:"Microwave",  hint:"Oven"},
-  {topic:"At Home", word:"Sofa",       hint:"Armchair"},
-  {topic:"At Home", word:"Remote",     hint:"Controller"},
-  {topic:"At Home", word:"Fridge",     hint:"Freezer"},
-  {topic:"At Home", word:"Shower",     hint:"Bath"},
-  {topic:"At Home", word:"Lamp",       hint:"Torch"},
-  {topic:"At Home", word:"Curtains",   hint:"Blinds"},
-  {topic:"At Home", word:"Doorbell",   hint:"Knocker"},
-  {topic:"At Home", word:"Kettle",     hint:"Toaster"},
-  {topic:"At Home", word:"Pillow",     hint:"Blanket"},
-
+  {topic:"School", word:"Homework",  hint:"Deadline"},
+  {topic:"School", word:"Library",   hint:"Books"},
+  {topic:"School", word:"Maths",     hint:"Numbers"},
+  {topic:"School", word:"Pencil",    hint:"Sharpen"},
+  {topic:"School", word:"Ruler",     hint:"Measure"},
+  {topic:"School", word:"Assembly",  hint:"Hall"},
+  {topic:"School", word:"Detention", hint:"Punishment"},
+  {topic:"School", word:"Lunch",     hint:"Canteen"},
+  {topic:"School", word:"PE",        hint:"Trainers"},
+  {topic:"School", word:"Exam",      hint:"Revision"},
+ 
+  // At Home
+  {topic:"At Home", word:"Microwave", hint:"Beep"},
+  {topic:"At Home", word:"Sofa",      hint:"Cushion"},
+  {topic:"At Home", word:"Remote",    hint:"Batteries"},
+  {topic:"At Home", word:"Fridge",    hint:"Cold"},
+  {topic:"At Home", word:"Shower",    hint:"Drain"},
+  {topic:"At Home", word:"Lamp",      hint:"Bulb"},
+  {topic:"At Home", word:"Curtains",  hint:"Darkness"},
+  {topic:"At Home", word:"Doorbell",  hint:"Buzzer"},
+  {topic:"At Home", word:"Kettle",    hint:"Boil"},
+  {topic:"At Home", word:"Pillow",    hint:"Feathers"},
+ 
   // Superheroes
-  {topic:"Superheroes", word:"Superman",   hint:"Batman"},
-  {topic:"Superheroes", word:"Spiderman",  hint:"Batman"},
-  {topic:"Superheroes", word:"Hulk",       hint:"Thor"},
-  {topic:"Superheroes", word:"Ironman",    hint:"Antman"},
-  {topic:"Superheroes", word:"Wolverine",  hint:"Cyclops"},
-  {topic:"Superheroes", word:"Flash",      hint:"Superman"},
-  {topic:"Superheroes", word:"Aquaman",    hint:"Namor"},
-  {topic:"Superheroes", word:"BlackPanther",hint:"Ironman"},
-  {topic:"Superheroes", word:"Deadpool",   hint:"Wolverine"},
-  {topic:"Superheroes", word:"Thor",       hint:"Loki"},
-
+  {topic:"Superheroes", word:"Superman",     hint:"Kryptonite"},
+  {topic:"Superheroes", word:"Spiderman",    hint:"Webs"},
+  {topic:"Superheroes", word:"Hulk",         hint:"Green"},
+  {topic:"Superheroes", word:"Ironman",      hint:"Suit"},
+  {topic:"Superheroes", word:"Wolverine",    hint:"Claws"},
+  {topic:"Superheroes", word:"Flash",        hint:"Speed"},
+  {topic:"Superheroes", word:"Aquaman",      hint:"Trident"},
+  {topic:"Superheroes", word:"BlackPanther", hint:"Vibranium"},
+  {topic:"Superheroes", word:"Deadpool",     hint:"Regenerate"},
+  {topic:"Superheroes", word:"Thor",         hint:"Hammer"},
+ 
   // Music
-  {topic:"Music", word:"Guitar",    hint:"Bass"},
-  {topic:"Music", word:"Drums",     hint:"Bongos"},
-  {topic:"Music", word:"Pop",       hint:"RnB"},
-  {topic:"Music", word:"Rap",       hint:"Grime"},
-  {topic:"Music", word:"Concert",   hint:"Festival"},
-  {topic:"Music", word:"Spotify",   hint:"Apple"},
-  {topic:"Music", word:"Violin",    hint:"Cello"},
-  {topic:"Music", word:"Choir",     hint:"Band"},
-  {topic:"Music", word:"Lyrics",    hint:"Chorus"},
-  {topic:"Music", word:"Headphones",hint:"Earphones"},
+  {topic:"Music", word:"Guitar",     hint:"Strings"},
+  {topic:"Music", word:"Drums",      hint:"Sticks"},
+  {topic:"Music", word:"Pop",        hint:"Charts"},
+  {topic:"Music", word:"Rap",        hint:"Bars"},
+  {topic:"Music", word:"Concert",    hint:"Crowd"},
+  {topic:"Music", word:"Spotify",    hint:"Stream"},
+  {topic:"Music", word:"Violin",     hint:"Bow"},
+  {topic:"Music", word:"Choir",      hint:"Harmony"},
+  {topic:"Music", word:"Lyrics",     hint:"Verse"},
+  {topic:"Music", word:"Headphones", hint:"Volume"},
 ];
-
 // ═══════════════════════════════════════
 //  ENGINE — follows same patterns as KingZaran game
 // ═══════════════════════════════════════
